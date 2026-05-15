@@ -21,8 +21,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         _emailController.text.trim(),
         _passwordController.text.trim(),
       );
+      // THE FIX: Instantly clears the login screen off the stack to reveal the AuthGate underneath
+      if (mounted) {
+        Navigator.of(context).popUntil((route) => route.isFirst);
+      }
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString()), backgroundColor: Colors.red));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString()), backgroundColor: Colors.red));
+      }
     }
   }
 
@@ -42,9 +48,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const SizedBox(height: 10),
-              const Text('MessIQ', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppTheme.primaryIndigo)),
-              const SizedBox(height: 24),
+              // THE FIX: Centered the App Name to act as a proper logo header
+              const Center(
+                child: Text('MessIQ', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: AppTheme.primaryIndigo, letterSpacing: 1.2)),
+              ),
+              const SizedBox(height: 40),
               const Text('Welcome Back', style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: AppTheme.textDark)),
               const SizedBox(height: 8),
               const Text('Enter your details to access your workspace.', style: TextStyle(color: Colors.grey, fontSize: 16)),
