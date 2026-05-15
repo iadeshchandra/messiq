@@ -15,8 +15,10 @@ dependencies:
   cloud_firestore: ^4.13.6
   
   flutter_riverpod: ^2.4.9
-  
   google_fonts: ^6.1.0
+  
+  # NEW: Added for QR Code Scanning
+  mobile_scanner: ^4.0.0
 
 dev_dependencies:
   flutter_test:
