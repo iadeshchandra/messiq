@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_theme.dart';
 import '../controllers/mess_controller.dart';
+import 'join_mess_screen.dart'; // IMPORTANT: Added import for cross-linking
 
 class CreateMessScreen extends ConsumerStatefulWidget {
   const CreateMessScreen({super.key});
@@ -27,7 +28,7 @@ class _CreateMessScreenState extends ConsumerState<CreateMessScreen> {
             const Icon(Icons.domain_add_rounded, size: 80, color: AppTheme.primaryIndigo),
             const SizedBox(height: 24),
             
-            // THE FIX: Professional Informative Banner
+            // PROFESSIONAL UX: Extremely clear role definition
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
@@ -40,14 +41,14 @@ class _CreateMessScreenState extends ConsumerState<CreateMessScreen> {
                 children: [
                   Row(
                     children: [
-                      Icon(Icons.info_outline_rounded, color: Colors.orange),
+                      Icon(Icons.admin_panel_settings_rounded, color: Colors.orange),
                       SizedBox(width: 8),
-                      Text('Important Notice', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.orange, fontSize: 16)),
+                      Text('You will be the Manager', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.orange, fontSize: 16)),
                     ],
                   ),
                   SizedBox(height: 8),
                   Text(
-                    'Creating a Mess makes you the Manager. You will be responsible for billing, adding members, and settings. If your mess already exists, go back and select "Join".',
+                    'By creating a new Mess, you take charge. You will be responsible for inviting members, tracking daily expenses, and managing the monthly billing cycle.',
                     style: TextStyle(color: Colors.orange, height: 1.4),
                   ),
                 ],
@@ -55,7 +56,7 @@ class _CreateMessScreenState extends ConsumerState<CreateMessScreen> {
             ),
             
             const SizedBox(height: 32),
-            const Text('Mess Name', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            const Text('Workspace Name', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
             const SizedBox(height: 8),
             TextField(
               controller: _nameController,
@@ -71,7 +72,7 @@ class _CreateMessScreenState extends ConsumerState<CreateMessScreen> {
               onPressed: isLoading ? null : () async {
                 if (_nameController.text.isNotEmpty) {
                   await ref.read(messControllerProvider.notifier).createMess(_nameController.text.trim());
-                  if (context.mounted) Navigator.pop(context); // Pops back to Selection, AuthGate will route to Dashboard
+                  if (context.mounted) Navigator.pop(context); 
                 }
               },
               style: ElevatedButton.styleFrom(
@@ -83,6 +84,19 @@ class _CreateMessScreenState extends ConsumerState<CreateMessScreen> {
               child: isLoading 
                 ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
                 : const Text('Create Workspace', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            ),
+            const SizedBox(height: 24),
+            
+            // PROFESSIONAL UX: The Cross-Link
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Text('Wait, my friends already made one. ', style: TextStyle(color: Colors.grey)),
+                GestureDetector(
+                  onTap: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const JoinMessScreen())),
+                  child: const Text('Join instead', style: TextStyle(color: AppTheme.primaryIndigo, fontWeight: FontWeight.bold)),
+                ),
+              ],
             ),
           ],
         ),
