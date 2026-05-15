@@ -23,8 +23,14 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         _passwordController.text.trim(),
         _nameController.text.trim(),
       );
+      // THE FIX: Instantly clears the screen stack
+      if (mounted) {
+        Navigator.of(context).popUntil((route) => route.isFirst);
+      }
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString()), backgroundColor: Colors.red));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString()), backgroundColor: Colors.red));
+      }
     }
   }
 
@@ -44,9 +50,11 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const SizedBox(height: 10),
-              const Text('MessIQ', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppTheme.primaryIndigo)),
-              const SizedBox(height: 24),
+              // THE FIX: Centered Brand Logo
+              const Center(
+                child: Text('MessIQ', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: AppTheme.primaryIndigo, letterSpacing: 1.2)),
+              ),
+              const SizedBox(height: 40),
               const Text('Create Account', style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: AppTheme.textDark)),
               const SizedBox(height: 8),
               const Text('Join MessIQ and transform your shared living experience.', style: TextStyle(color: Colors.grey, fontSize: 16)),
