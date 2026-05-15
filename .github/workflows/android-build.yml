@@ -1,0 +1,62 @@
+name: Build MessIQ APK
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch: 
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+
+    # Setup Flutter (Required for a Flutter Project)
+    - name: Set up Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        channel: 'stable'
+        cache: true
+
+    # STRICT GRADLE 8.7 SETUP WITH CACHE BYPASS
+    - name: Setup Gradle 8.7
+      uses: gradle/actions/setup-gradle@v3
+      with:
+        gradle-version: '8.7'
+        cache-disabled: true
+
+    # Automatically delete any hidden Windows files that cause Android to crash
+    - name: Clean up Windows Hidden Files
+      run: find . -name "desktop.ini" -type f -delete
+
+    # 🔐 THE SECURE STEP: Recreate the JSON file from GitHub Secrets
+    # Note: In Flutter, this file MUST be in android/app/
+    - name: Decode and create google-services.json
+      env:
+        FIREBASE_SECRET: ${{ secrets.GOOGLE_SERVICES_JSON }}
+      run: |
+        mkdir -p android/app
+        echo "$FIREBASE_SECRET" > android/app/google-services.json
+
+    - name: Get Dependencies
+      run: flutter pub get
+
+    - name: Build MessIQ APK
+      run: flutter build apk --debug
+
+    - name: Rename APK for Professional Distribution
+      run: mv build/app/outputs/flutter-apk/app-debug.apk build/app/outputs/flutter-apk/MessIQ-v1.0-Debug.apk
+
+    - name: Upload APK Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: MessIQ-Debug-Build
+        path: build/app/outputs/flutter-apk/MessIQ-v1.0-Debug.apk
