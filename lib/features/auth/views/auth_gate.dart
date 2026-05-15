@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../mess/views/mess_selection_screen.dart';
 import '../controllers/auth_controller.dart';
 import 'login_screen.dart';
 
@@ -13,21 +14,8 @@ class AuthGate extends ConsumerWidget {
     return authState.when(
       data: (user) {
         if (user != null) {
-          // Temporarily showing a placeholder for Dashboard (Phase 3)
-          return Scaffold(
-            body: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text('Welcome, ${user.email}'),
-                  ElevatedButton(
-                    onPressed: () => ref.read(authControllerProvider.notifier).logout(),
-                    child: const Text('Logout'),
-                  ),
-                ],
-              ),
-            ),
-          );
+          // Replaced the placeholder with the new Mess Selection UI
+          return const MessSelectionScreen();
         }
         return const LoginScreen();
       },
