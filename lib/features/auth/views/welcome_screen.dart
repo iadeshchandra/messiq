@@ -14,24 +14,37 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
 
+  // UX STRATEGY: All features listed, with Killer Features sorted at the absolute top.
   final List<Map<String, dynamic>> _features = [
     {
       'title': 'The Ultimate Finance Engine',
-      'subtitle': 'Never argue over money again. Auto-calculate daily meal rates, track shared expenses, and instantly see who owes what.',
+      'subtitle': 'Never argue over money again. Auto-calculate daily meal rates, track shared expenses, and instantly see who owes what in real-time.',
       'icon': Icons.account_balance_wallet_rounded,
       'color': AppTheme.primaryIndigo,
     },
     {
-      'title': 'AI-Powered Living',
-      'subtitle': 'Predict monthly grocery costs, generate smart bazaar lists, and let our AI assistant chase down pending payments for you.',
-      'icon': Icons.auto_awesome_rounded,
-      'color': Colors.orange,
-    },
-    {
-      'title': 'Smart Market & Polls',
+      'title': 'Smart Market & Meals',
       'subtitle': 'Sync grocery checklists offline, vote on weekend meals, and manage your entire mess from one beautiful dashboard.',
       'icon': Icons.shopping_cart_rounded,
       'color': Colors.teal,
+    },
+    {
+      'title': 'Utility Bill Auto-Split',
+      'subtitle': 'Input the monthly internet, electricity, and gas bills. The app automatically splits it among members and adds it to their monthly dues.',
+      'icon': Icons.receipt_long_rounded,
+      'color': Colors.blueAccent,
+    },
+    {
+      'title': 'Manager Analytics',
+      'subtitle': 'Get detailed monthly reports, track payment history, and monitor your mess performance with clean, easy-to-read data charts.',
+      'icon': Icons.insights_rounded,
+      'color': Colors.deepPurple,
+    },
+    {
+      'title': 'AI-Powered Assistant',
+      'subtitle': 'Let AI predict your monthly grocery costs, generate smart bazaar lists, and chase down pending payments for you.',
+      'icon': Icons.auto_awesome_rounded,
+      'color': Colors.orange,
     },
     {
       'title': 'Faith & Safety Mode',
@@ -68,21 +81,34 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                 onPageChanged: (index) => setState(() => _currentPage = index),
                 itemCount: _features.length,
                 itemBuilder: (context, index) {
+                  // THE FIX: SingleChildScrollView prevents the "Bottom Overflowed" error on smaller screens
                   return Padding(
-                    padding: const EdgeInsets.all(40.0),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(40),
-                          decoration: BoxDecoration(color: _features[index]['color'].withOpacity(0.1), shape: BoxShape.circle),
-                          child: Icon(_features[index]['icon'], size: 120, color: _features[index]['color']),
+                    padding: const EdgeInsets.symmetric(horizontal: 40.0),
+                    child: Center(
+                      child: SingleChildScrollView(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(40),
+                              decoration: BoxDecoration(color: _features[index]['color'].withOpacity(0.1), shape: BoxShape.circle),
+                              child: Icon(_features[index]['icon'], size: 100, color: _features[index]['color']),
+                            ),
+                            const SizedBox(height: 32),
+                            Text(
+                              _features[index]['title'], 
+                              style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: AppTheme.textDark), 
+                              textAlign: TextAlign.center
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              _features[index]['subtitle'], 
+                              style: const TextStyle(fontSize: 16, color: Colors.grey, height: 1.5), 
+                              textAlign: TextAlign.center
+                            ),
+                          ],
                         ),
-                        const SizedBox(height: 48),
-                        Text(_features[index]['title'], style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: AppTheme.textDark), textAlign: TextAlign.center),
-                        const SizedBox(height: 16),
-                        Text(_features[index]['subtitle'], style: const TextStyle(fontSize: 16, color: Colors.grey, height: 1.5), textAlign: TextAlign.center),
-                      ],
+                      ),
                     ),
                   );
                 },
@@ -97,13 +123,16 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                   margin: const EdgeInsets.symmetric(horizontal: 4),
                   height: 8,
                   width: _currentPage == index ? 24 : 8,
-                  decoration: BoxDecoration(color: _currentPage == index ? AppTheme.primaryIndigo : Colors.grey.shade300, borderRadius: BorderRadius.circular(4)),
+                  decoration: BoxDecoration(
+                    color: _currentPage == index ? AppTheme.primaryIndigo : Colors.grey.shade300, 
+                    borderRadius: BorderRadius.circular(4)
+                  ),
                 ),
               ),
             ),
-            const SizedBox(height: 40),
+            const SizedBox(height: 32),
             Padding(
-              padding: const EdgeInsets.all(24.0),
+              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
               child: SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
@@ -114,7 +143,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                     padding: const EdgeInsets.symmetric(vertical: 20),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                   ),
-                  child: const Text('Create Workspace', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  child: const Text('Create Account', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                 ),
               ),
             ),
