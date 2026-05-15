@@ -11,7 +11,8 @@ class MessIqApp extends StatelessWidget {
       title: 'MessIQ',
       theme: AppTheme.lightTheme,
       debugShowCheckedModeBanner: false,
-      home: const AuthGate(), // 👈 This is the magic line that shows the Login Screen
+      // This routes the app to the Phase 2 Auth System
+      home: const AuthGate(), 
     );
   }
 }
