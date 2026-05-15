@@ -26,33 +26,51 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final isLoading = ref.watch(authControllerProvider);
 
     return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
       body: SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24.0),
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Text(
-                'MessIQ',
-                style: TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                  color: AppTheme.primaryIndigo,
+              const SizedBox(height: 20),
+              Container(
+                height: 80,
+                width: 80,
+                alignment: Alignment.centerLeft,
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppTheme.primaryIndigo.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: const Icon(Icons.lock_person_rounded, size: 40, color: AppTheme.primaryIndigo),
                 ),
-                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              const Text(
+                'Welcome Back',
+                style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: AppTheme.textDark),
               ),
               const SizedBox(height: 8),
               const Text(
-                'Smart Living for Shared Life',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.grey),
+                'Enter your details to access your workspace.',
+                style: TextStyle(color: Colors.grey, fontSize: 16),
               ),
               const SizedBox(height: 48),
               TextField(
                 controller: _emailController,
+                keyboardType: TextInputType.emailAddress,
                 decoration: InputDecoration(
-                  hintText: 'Email',
+                  hintText: 'Email Address',
+                  prefixIcon: const Icon(Icons.email_outlined, color: Colors.grey),
                   filled: true,
                   fillColor: Colors.white,
                   border: OutlineInputBorder(
@@ -67,12 +85,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 obscureText: true,
                 decoration: InputDecoration(
                   hintText: 'Password',
+                  prefixIcon: const Icon(Icons.lock_outline_rounded, color: Colors.grey),
                   filled: true,
                   fillColor: Colors.white,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(16),
                     borderSide: BorderSide.none,
                   ),
+                ),
+              ),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  onPressed: () {}, // Future feature: Forgot Password
+                  child: const Text('Forgot Password?', style: TextStyle(color: Colors.grey)),
                 ),
               ),
               const SizedBox(height: 24),
@@ -86,16 +112,24 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppTheme.primaryIndigo,
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  padding: const EdgeInsets.symmetric(vertical: 18),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  elevation: 0,
                 ),
                 child: isLoading 
                   ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                  : const Text('Login'),
+                  : const Text('Login', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
               ),
-              TextButton(
-                onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SignupScreen())),
-                child: const Text('New here? Create an account'),
+              const SizedBox(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text('New to MessIQ? ', style: TextStyle(color: Colors.grey)),
+                  GestureDetector(
+                    onTap: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const SignupScreen())),
+                    child: const Text('Create Account', style: TextStyle(color: AppTheme.primaryIndigo, fontWeight: FontWeight.bold)),
+                  ),
+                ],
               ),
             ],
           ),
