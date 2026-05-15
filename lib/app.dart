@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:messiq/core/theme/app_theme.dart';
-import 'package:messiq/features/auth/views/auth_gate.dart'; // Make sure this is imported
+import 'package:messiq/features/auth/views/auth_gate.dart';
 
 class MessIqApp extends StatelessWidget {
   const MessIqApp({super.key});
@@ -11,7 +11,7 @@ class MessIqApp extends StatelessWidget {
       title: 'MessIQ',
       theme: AppTheme.lightTheme,
       debugShowCheckedModeBanner: false,
-      home: const AuthGate(), // This replaces the "Initialized" text
+      home: const AuthGate(), // 👈 This is the magic line that shows the Login Screen
     );
   }
 }
