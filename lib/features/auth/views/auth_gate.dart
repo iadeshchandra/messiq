@@ -16,14 +16,13 @@ class AuthGate extends ConsumerWidget {
     return authState.when(
       data: (user) {
         if (user != null) {
-          // Check if they are in a mess
           final messState = ref.watch(activeMessProvider);
           return messState.when(
             data: (messId) {
               if (messId != null) {
-                return DashboardScreen(messId: messId); // Go to Dashboard!
+                return DashboardScreen(messId: messId);
               }
-              return const MessSelectionScreen(); // Stay on Selection Screen
+              return const MessSelectionScreen();
             },
             loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
             error: (e, _) => Scaffold(body: Center(child: Text('Error loading workspace: $e'))),
