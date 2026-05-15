@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_theme.dart';
 import '../controllers/mess_controller.dart';
-import 'join_mess_screen.dart'; // IMPORTANT: Added import for cross-linking
+import 'join_mess_screen.dart';
 
 class CreateMessScreen extends ConsumerStatefulWidget {
   const CreateMessScreen({super.key});
@@ -19,21 +19,21 @@ class _CreateMessScreenState extends ConsumerState<CreateMessScreen> {
     final isLoading = ref.watch(messControllerProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Create a Workspace')),
+      appBar: AppBar(title: const Text('Start a New Mess')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Icon(Icons.domain_add_rounded, size: 80, color: AppTheme.primaryIndigo),
+            const Icon(Icons.home_work_rounded, size: 80, color: AppTheme.primaryIndigo),
             const SizedBox(height: 24),
             
-            // PROFESSIONAL UX: Extremely clear role definition
+            // PROFESSIONAL UX: Friendly, polite, and helpful banner
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: Colors.orange.withOpacity(0.1),
-                border: Border.all(color: Colors.orange.withOpacity(0.5)),
+                color: AppTheme.primaryIndigo.withOpacity(0.05),
+                border: Border.all(color: AppTheme.primaryIndigo.withOpacity(0.2)),
                 borderRadius: BorderRadius.circular(16),
               ),
               child: const Column(
@@ -41,27 +41,27 @@ class _CreateMessScreenState extends ConsumerState<CreateMessScreen> {
                 children: [
                   Row(
                     children: [
-                      Icon(Icons.admin_panel_settings_rounded, color: Colors.orange),
+                      Icon(Icons.waving_hand_rounded, color: AppTheme.primaryIndigo),
                       SizedBox(width: 8),
-                      Text('You will be the Manager', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.orange, fontSize: 16)),
+                      Text('Starting a new journey? 🚀', style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primaryIndigo, fontSize: 16)),
                     ],
                   ),
                   SizedBox(height: 8),
                   Text(
-                    'By creating a new Mess, you take charge. You will be responsible for inviting members, tracking daily expenses, and managing the monthly billing cycle.',
-                    style: TextStyle(color: Colors.orange, height: 1.4),
+                    'By creating this mess, you will become the Manager. You\'ll handle the daily Hisab, Bazaar lists, and add members.',
+                    style: TextStyle(color: Colors.black87, height: 1.4),
                   ),
                 ],
               ),
             ),
             
             const SizedBox(height: 32),
-            const Text('Workspace Name', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            const Text('Mess / Hostel Name', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
             const SizedBox(height: 8),
             TextField(
               controller: _nameController,
               decoration: InputDecoration(
-                hintText: 'e.g. The Developers Hub',
+                hintText: 'e.g. Dhaka Boys Hostel',
                 filled: true,
                 fillColor: Colors.white,
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
@@ -83,20 +83,34 @@ class _CreateMessScreenState extends ConsumerState<CreateMessScreen> {
               ),
               child: isLoading 
                 ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                : const Text('Create Workspace', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                : const Text('Create Mess', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 32),
             
-            // PROFESSIONAL UX: The Cross-Link
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Text('Wait, my friends already made one. ', style: TextStyle(color: Colors.grey)),
-                GestureDetector(
-                  onTap: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const JoinMessScreen())),
-                  child: const Text('Join instead', style: TextStyle(color: AppTheme.primaryIndigo, fontWeight: FontWeight.bold)),
-                ),
-              ],
+            // PROFESSIONAL UX: The Cross-Link Area (Made much larger and friendlier)
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Column(
+                children: [
+                  const Text('Did your friends already create one?', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 8),
+                  OutlinedButton.icon(
+                    onPressed: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const JoinMessScreen())),
+                    icon: const Icon(Icons.group_add_rounded),
+                    label: const Text('Join an Existing Mess'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppTheme.primaryIndigo,
+                      side: const BorderSide(color: AppTheme.primaryIndigo),
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
