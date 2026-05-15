@@ -14,32 +14,32 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
 
-  final List<Map<String, dynamic>> _onboardingData = [
+  final List<Map<String, dynamic>> _features = [
     {
-      'title': 'Smart Living OS',
-      'subtitle': 'Manage your shared space effortlessly. No more arguments over who paid what or whose turn it is to shop.',
-      'icon': Icons.home_work_rounded,
+      'title': 'The Ultimate Finance Engine',
+      'subtitle': 'Never argue over money again. Auto-calculate daily meal rates, track shared expenses, and instantly see who owes what.',
+      'icon': Icons.account_balance_wallet_rounded,
       'color': AppTheme.primaryIndigo,
     },
     {
-      'title': 'Auto Finance Engine',
-      'subtitle': 'Input daily meals and expenses. The engine automatically calculates individual meal rates and monthly balances instantly.',
-      'icon': Icons.calculate_rounded,
-      'color': Colors.teal,
-    },
-    {
-      'title': 'AI-Powered Insights',
-      'subtitle': 'Let AI predict your monthly grocery costs, suggest market lists, and remind members about pending dues.',
+      'title': 'AI-Powered Living',
+      'subtitle': 'Predict monthly grocery costs, generate smart bazaar lists, and let our AI assistant chase down pending payments for you.',
       'icon': Icons.auto_awesome_rounded,
       'color': Colors.orange,
     },
+    {
+      'title': 'Smart Market & Polls',
+      'subtitle': 'Sync grocery checklists offline, vote on weekend meals, and manage your entire mess from one beautiful dashboard.',
+      'icon': Icons.shopping_cart_rounded,
+      'color': Colors.teal,
+    },
+    {
+      'title': 'Faith & Safety Mode',
+      'subtitle': 'Silent modes during prayer times, daily inspirations, and an ICE vault for emergency contacts and blood groups.',
+      'icon': Icons.health_and_safety_rounded,
+      'color': Colors.redAccent,
+    },
   ];
-
-  @override
-  void dispose() {
-    _pageController.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -48,21 +48,25 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            Align(
-              alignment: Alignment.topRight,
-              child: TextButton(
-                onPressed: () {
-                  Navigator.push(context, MaterialPageRoute(builder: (_) => const LoginScreen()));
-                },
-                child: const Text('Skip', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text('MessIQ', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppTheme.primaryIndigo)),
+                  TextButton(
+                    onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const LoginScreen())),
+                    child: const Text('Login', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
+                  ),
+                ],
               ),
             ),
             Expanded(
-              flex: 3,
+              flex: 4,
               child: PageView.builder(
                 controller: _pageController,
                 onPageChanged: (index) => setState(() => _currentPage = index),
-                itemCount: _onboardingData.length,
+                itemCount: _features.length,
                 itemBuilder: (context, index) {
                   return Padding(
                     padding: const EdgeInsets.all(40.0),
@@ -70,29 +74,14 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Container(
-                          padding: const EdgeInsets.all(32),
-                          decoration: BoxDecoration(
-                            color: _onboardingData[index]['color'].withOpacity(0.1),
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(
-                            _onboardingData[index]['icon'],
-                            size: 100,
-                            color: _onboardingData[index]['color'],
-                          ),
+                          padding: const EdgeInsets.all(40),
+                          decoration: BoxDecoration(color: _features[index]['color'].withOpacity(0.1), shape: BoxShape.circle),
+                          child: Icon(_features[index]['icon'], size: 120, color: _features[index]['color']),
                         ),
                         const SizedBox(height: 48),
-                        Text(
-                          _onboardingData[index]['title'],
-                          style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: AppTheme.textDark),
-                          textAlign: TextAlign.center,
-                        ),
+                        Text(_features[index]['title'], style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: AppTheme.textDark), textAlign: TextAlign.center),
                         const SizedBox(height: 16),
-                        Text(
-                          _onboardingData[index]['subtitle'],
-                          style: const TextStyle(fontSize: 16, color: Colors.grey, height: 1.5),
-                          textAlign: TextAlign.center,
-                        ),
+                        Text(_features[index]['subtitle'], style: const TextStyle(fontSize: 16, color: Colors.grey, height: 1.5), textAlign: TextAlign.center),
                       ],
                     ),
                   );
@@ -102,60 +91,33 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: List.generate(
-                _onboardingData.length,
+                _features.length,
                 (index) => AnimatedContainer(
                   duration: const Duration(milliseconds: 300),
                   margin: const EdgeInsets.symmetric(horizontal: 4),
                   height: 8,
                   width: _currentPage == index ? 24 : 8,
-                  decoration: BoxDecoration(
-                    color: _currentPage == index ? AppTheme.primaryIndigo : Colors.grey.shade300,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
+                  decoration: BoxDecoration(color: _currentPage == index ? AppTheme.primaryIndigo : Colors.grey.shade300, borderRadius: BorderRadius.circular(4)),
                 ),
               ),
             ),
             const SizedBox(height: 40),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
-              child: Column(
-                children: [
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        Navigator.push(context, MaterialPageRoute(builder: (_) => const SignupScreen()));
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.primaryIndigo,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 18),
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                      ),
-                      child: const Text('Get Started', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                    ),
+              padding: const EdgeInsets.all(24.0),
+              child: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SignupScreen())),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primaryIndigo,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 20),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                   ),
-                  const SizedBox(height: 16),
-                  SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton(
-                      onPressed: () {
-                        Navigator.push(context, MaterialPageRoute(builder: (_) => const LoginScreen()));
-                      },
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppTheme.primaryIndigo,
-                        padding: const EdgeInsets.symmetric(vertical: 18),
-                        side: const BorderSide(color: AppTheme.primaryIndigo, width: 2),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                      ),
-                      child: const Text('I already have an account', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                    ),
-                  ),
-                ],
+                  child: const Text('Create Workspace', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                ),
               ),
             ),
-            const SizedBox(height: 24),
           ],
         ),
       ),
