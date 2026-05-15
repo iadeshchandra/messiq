@@ -29,11 +29,30 @@ class _JoinMessScreenState extends ConsumerState<JoinMessScreen> {
     final isLoading = ref.watch(messControllerProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Join a Mess')),
-      body: Padding(
+      appBar: AppBar(title: const Text('Join a Workspace')),
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(24.0),
         child: Column(
           children: [
+            // THE FIX: Step-by-step instructions
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: AppTheme.primaryIndigo.withOpacity(0.05),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: const Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('How to join:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppTheme.primaryIndigo)),
+                  SizedBox(height: 8),
+                  Text('1. Ask your current Mess Manager for the 6-digit Invite Code.', style: TextStyle(height: 1.5, color: Colors.black87)),
+                  Text('2. Enter it below or tap the icon to scan their QR code.', style: TextStyle(height: 1.5, color: Colors.black87)),
+                ],
+              ),
+            ),
+            const SizedBox(height: 40),
+            
             GestureDetector(
               onTap: _openScanner,
               child: Container(
@@ -42,18 +61,21 @@ class _JoinMessScreenState extends ConsumerState<JoinMessScreen> {
                   color: AppTheme.primaryIndigo.withOpacity(0.1),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.qr_code_scanner_rounded, size: 64, color: AppTheme.primaryIndigo),
+                child: const Icon(Icons.qr_code_scanner_rounded, size: 50, color: AppTheme.primaryIndigo),
               ),
             ),
-            const SizedBox(height: 16),
-            const Text('Tap the icon to scan, or enter the 6-digit code manually.', textAlign: TextAlign.center),
-            const SizedBox(height: 24),
+            const SizedBox(height: 8),
+            const Text('Tap to Scan QR', style: TextStyle(color: AppTheme.primaryIndigo, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 40),
+            
+            const Align(alignment: Alignment.centerLeft, child: Text('Or enter code manually:', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey))),
+            const SizedBox(height: 8),
             TextField(
               controller: _codeController,
               maxLength: 6,
               textCapitalization: TextCapitalization.characters,
               textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 24, letterSpacing: 8, fontWeight: FontWeight.bold),
+              style: const TextStyle(fontSize: 28, letterSpacing: 12, fontWeight: FontWeight.bold),
               decoration: InputDecoration(
                 hintText: 'XXXXXX',
                 filled: true,
@@ -62,7 +84,7 @@ class _JoinMessScreenState extends ConsumerState<JoinMessScreen> {
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
               ),
             ),
-            const SizedBox(height: 32),
+            const SizedBox(height: 40),
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
@@ -71,22 +93,22 @@ class _JoinMessScreenState extends ConsumerState<JoinMessScreen> {
                     try {
                       await ref.read(messControllerProvider.notifier).joinMess(_codeController.text.trim());
                       if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Join request sent!')));
+                        Navigator.pop(context); // Pop back, AuthGate will trigger
                       }
                     } catch (e) {
-                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString()), backgroundColor: Colors.red));
                     }
                   }
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppTheme.primaryIndigo,
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  padding: const EdgeInsets.symmetric(vertical: 18),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 ),
                 child: isLoading 
-                  ? const CircularProgressIndicator(color: Colors.white)
-                  : const Text('Send Join Request'),
+                  ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                  : const Text('Send Join Request', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
               ),
             ),
           ],
