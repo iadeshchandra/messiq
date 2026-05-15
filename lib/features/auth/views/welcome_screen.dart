@@ -14,37 +14,31 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
 
-  // UX STRATEGY: All features listed, with Killer Features sorted at the absolute top.
+  // Culturally Tuned "Mess Life" Copy
   final List<Map<String, dynamic>> _features = [
     {
-      'title': 'The Ultimate Finance Engine',
-      'subtitle': 'Never argue over money again. Auto-calculate daily meal rates, track shared expenses, and instantly see who owes what in real-time.',
+      'title': 'The Ultimate Hisab Engine',
+      'subtitle': 'No more arguing over money. Auto-calculate daily meal rates, track shared expenses, and instantly see who owes what.',
       'icon': Icons.account_balance_wallet_rounded,
       'color': AppTheme.primaryIndigo,
     },
     {
-      'title': 'Smart Market & Meals',
-      'subtitle': 'Sync grocery checklists offline, vote on weekend meals, and manage your entire mess from one beautiful dashboard.',
+      'title': 'Smart Bazaar & Meals',
+      'subtitle': 'Sync grocery checklists offline, vote on weekend special meals, and manage your entire mess from one beautiful dashboard.',
       'icon': Icons.shopping_cart_rounded,
       'color': Colors.teal,
     },
     {
-      'title': 'Utility Bill Auto-Split',
-      'subtitle': 'Input the monthly internet, electricity, and gas bills. The app automatically splits it among members and adds it to their monthly dues.',
+      'title': 'Auto-Split Utility Bills',
+      'subtitle': 'Input the monthly WiFi, electricity, and Bua/Khala bills. The app automatically splits it equally and adds it to their monthly dues.',
       'icon': Icons.receipt_long_rounded,
       'color': Colors.blueAccent,
     },
     {
       'title': 'Manager Analytics',
-      'subtitle': 'Get detailed monthly reports, track payment history, and monitor your mess performance with clean, easy-to-read data charts.',
+      'subtitle': 'Get detailed monthly reports, track payment history, and monitor your mess performance without touching Excel.',
       'icon': Icons.insights_rounded,
       'color': Colors.deepPurple,
-    },
-    {
-      'title': 'AI-Powered Assistant',
-      'subtitle': 'Let AI predict your monthly grocery costs, generate smart bazaar lists, and chase down pending payments for you.',
-      'icon': Icons.auto_awesome_rounded,
-      'color': Colors.orange,
     },
     {
       'title': 'Faith & Safety Mode',
@@ -81,7 +75,6 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                 onPageChanged: (index) => setState(() => _currentPage = index),
                 itemCount: _features.length,
                 itemBuilder: (context, index) {
-                  // THE FIX: SingleChildScrollView prevents the "Bottom Overflowed" error on smaller screens
                   return Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 40.0),
                     child: Center(
