@@ -3,12 +3,14 @@ class UserModel {
   final String name;
   final String email;
   final DateTime createdAt;
+  final String? activeMessId;
 
   UserModel({
     required this.uid,
     required this.name,
     required this.email,
     required this.createdAt,
+    this.activeMessId,
   });
 
   Map<String, dynamic> toMap() {
@@ -17,6 +19,7 @@ class UserModel {
       'name': name,
       'email': email,
       'createdAt': createdAt.toIso8601String(),
+      'activeMessId': activeMessId,
     };
   }
 
@@ -26,6 +29,7 @@ class UserModel {
       name: map['name'] ?? '',
       email: map['email'] ?? '',
       createdAt: DateTime.parse(map['createdAt']),
+      activeMessId: map['activeMessId'],
     );
   }
 }
