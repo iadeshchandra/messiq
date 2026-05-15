@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../mess/views/mess_selection_screen.dart';
+import '../../mess/controllers/active_mess_provider.dart';
+import '../../dashboard/views/dashboard_screen.dart';
 import '../controllers/auth_controller.dart';
 import 'login_screen.dart';
 
@@ -14,8 +16,18 @@ class AuthGate extends ConsumerWidget {
     return authState.when(
       data: (user) {
         if (user != null) {
-          // Replaced the placeholder with the new Mess Selection UI
-          return const MessSelectionScreen();
+          // Check if they are in a mess
+          final messState = ref.watch(activeMessProvider);
+          return messState.when(
+            data: (messId) {
+              if (messId != null) {
+                return DashboardScreen(messId: messId); // Go to Dashboard!
+              }
+              return const MessSelectionScreen(); // Stay on Selection Screen
+            },
+            loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
+            error: (e, _) => Scaffold(body: Center(child: Text('Error loading workspace: $e'))),
+          );
         }
         return const LoginScreen();
       },
