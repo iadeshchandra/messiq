@@ -4,8 +4,10 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:path_provider/path_provider.dart';
 import '../../auth/models/user_model.dart';
+import '../models/finance_models.dart';
 
 class PdfService {
+  // 1. THE MONTHLY GENERAL HISAB PDF
   static Future<File> generateHisabPdf({
     required String messName,
     required String messId,
@@ -25,7 +27,6 @@ class PdfService {
         margin: const pw.EdgeInsets.all(32),
         build: (pw.Context context) {
           return [
-            // 1. Header Section
             pw.Row(
               mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
               children: [
@@ -50,8 +51,6 @@ class PdfService {
               ],
             ),
             pw.Divider(color: primaryColor, thickness: 2, height: 32),
-
-            // 2. Summary Section
             pw.Container(
               padding: const pw.EdgeInsets.all(16),
               decoration: pw.BoxDecoration(color: secondaryColor, borderRadius: pw.BorderRadius.circular(12)),
@@ -66,8 +65,6 @@ class PdfService {
               ),
             ),
             pw.SizedBox(height: 32),
-
-            // 3. Ledger Data Table
             pw.Text('Member Balances', style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold, color: textDark)),
             pw.SizedBox(height: 12),
             pw.TableHelper.fromTextArray(
@@ -99,7 +96,6 @@ class PdfService {
             ),
           ];
         },
-        // 4. Branding Footer
         footer: (pw.Context context) {
           return pw.Column(
             children: [
@@ -118,20 +114,82 @@ class PdfService {
       ),
     );
 
-    // Save PDF to temporary directory to be shared or downloaded
     final output = await getTemporaryDirectory();
     final file = File('${output.path}/MessIQ_Hisab_${DateTime.now().millisecondsSinceEpoch}.pdf');
     await file.writeAsBytes(await pdf.save());
     return file;
   }
 
-  static pw.Widget _buildSummaryItem(String label, String value, {bool isHighlight = false, PdfColor? color}) {
-    return pw.Column(
-      children: [
-        pw.Text(label, style: pw.TextStyle(color: PdfColor.fromHex('#64748B'), fontSize: 10)),
-        pw.SizedBox(height: 4),
-        pw.Text(value, style: pw.TextStyle(color: isHighlight ? color : PdfColor.fromHex('#0F172A'), fontSize: 16, fontWeight: pw.FontWeight.bold)),
-      ],
-    );
-  }
-}
+  // 2. NEW: INDIVIDUAL MEMBER LEDGER ACTIVITY PDF
+  static Future<File> generateMemberLedgerPdf({
+    required String messName,
+    required UserModel member,
+    required String dateRangeText,
+    required List<PaymentModel> deposits,
+    required List<DailyMealModel> meals,
+    required List<ExpenseModel> expenses,
+  }) async {
+    final pdf = pw.Document();
+
+    final primaryColor = PdfColor.fromHex('#0D9488'); // Teal for Ledger
+    final secondaryColor = PdfColor.fromHex('#F0FDFA');
+    final textDark = PdfColor.fromHex('#0F172A');
+    final textGrey = PdfColor.fromHex('#64748B');
+
+    // Calculate Totals for Summary
+    double totalDeposits = deposits.fold(0, (sum, item) => sum + item.amount);
+    double totalMealsCount = meals.fold(0, (sum, item) => sum + (item.memberMeals[member.uid] ?? 0));
+    double totalExpensesAdded = expenses.fold(0, (sum, item) => sum + item.amount);
+
+    pdf.addPage(
+      pw.MultiPage(
+        pageFormat: PdfPageFormat.a4,
+        margin: const pw.EdgeInsets.all(32),
+        build: (pw.Context context) {
+          return [
+            // Header
+            pw.Row(
+              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+              children: [
+                pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Text('MessIQ Ledger', style: pw.TextStyle(color: primaryColor, fontSize: 24, fontWeight: pw.FontWeight.bold)),
+                    pw.Text(messName, style: pw.TextStyle(color: textGrey, fontSize: 12)),
+                  ],
+                ),
+                pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.end,
+                  children: [
+                    pw.Text('MEMBER ACTIVITY REPORT', style: pw.TextStyle(color: textDark, fontSize: 14, fontWeight: pw.FontWeight.bold)),
+                    pw.SizedBox(height: 4),
+                    pw.Text('Name: ${member.name}', style: pw.TextStyle(color: primaryColor, fontSize: 14, fontWeight: pw.FontWeight.bold)),
+                    pw.Text('Period: $dateRangeText', style: pw.TextStyle(color: textGrey, fontSize: 10)),
+                  ],
+                ),
+              ],
+            ),
+            pw.Divider(color: primaryColor, thickness: 2, height: 32),
+
+            // Summary Stats
+            pw.Container(
+              padding: const pw.EdgeInsets.all(16),
+              decoration: pw.BoxDecoration(color: secondaryColor, borderRadius: pw.BorderRadius.circular(12)),
+              child: pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceAround,
+                children: [
+                  _buildSummaryItem('Total Deposits', 'Tk ${totalDeposits.toStringAsFixed(0)}', isHighlight: true, color: PdfColors.green700),
+                  _buildSummaryItem('Meals Consumed', totalMealsCount.toStringAsFixed(1), isHighlight: true, color: PdfColors.orange700),
+                  _buildSummaryItem('Expenses Added', 'Tk ${totalExpensesAdded.toStringAsFixed(0)}'),
+                ],
+              ),
+            ),
+            pw.SizedBox(height: 24),
+
+            // Deposits Table
+            if (deposits.isNotEmpty) ...[
+              pw.Text('Cash Deposits', style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold, color: textDark)),
+              pw.SizedBox(height: 8),
+              pw.TableHelper.fromTextArray(
+                headers: ['Date', 'Amount'],
+                headerStyle: pw.TextStyle(color: PdfColors.
