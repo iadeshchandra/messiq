@@ -4,6 +4,14 @@ class UserModel {
   final String email;
   final DateTime createdAt;
   final String? activeMessId;
+  
+  // Smart Member & ICE Features
+  final String? phone;
+  final String? presentAddress;
+  final String? permanentAddress;
+  final String? iceName;
+  final String? icePhone;
+  final String? bloodGroup;
 
   UserModel({
     required this.uid,
@@ -11,6 +19,12 @@ class UserModel {
     required this.email,
     required this.createdAt,
     this.activeMessId,
+    this.phone,
+    this.presentAddress,
+    this.permanentAddress,
+    this.iceName,
+    this.icePhone,
+    this.bloodGroup,
   });
 
   Map<String, dynamic> toMap() {
@@ -20,6 +34,12 @@ class UserModel {
       'email': email,
       'createdAt': createdAt.toIso8601String(),
       'activeMessId': activeMessId,
+      'phone': phone,
+      'presentAddress': presentAddress,
+      'permanentAddress': permanentAddress,
+      'iceName': iceName,
+      'icePhone': icePhone,
+      'bloodGroup': bloodGroup,
     };
   }
 
@@ -30,6 +50,12 @@ class UserModel {
       email: map['email'] ?? '',
       createdAt: DateTime.parse(map['createdAt']),
       activeMessId: map['activeMessId'],
+      phone: map['phone'],
+      presentAddress: map['presentAddress'],
+      permanentAddress: map['permanentAddress'],
+      iceName: map['iceName'],
+      icePhone: map['icePhone'],
+      bloodGroup: map['bloodGroup'],
     );
   }
 }
