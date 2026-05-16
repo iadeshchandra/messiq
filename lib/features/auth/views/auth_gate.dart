@@ -21,15 +21,15 @@ class AuthGate extends ConsumerWidget {
           final messState = ref.watch(activeMessProvider);
           return messState.when(
             data: (messId) {
-              if (messId != null) {
-                // THE FIX: Check their approval status before letting them in!
+              // SAFETY CHECK: Ensure messId is valid before letting them in
+              if (messId != null && messId.isNotEmpty) {
                 final memberRole = ref.watch(currentMemberRoleProvider(messId));
                 return memberRole.when(
                   data: (member) {
                     if (member?.status == 'pending') {
-                      return WaitingRoomScreen(messId: messId); // Route to holding cell
+                      return WaitingRoomScreen(messId: messId); 
                     }
-                    return DashboardScreen(messId: messId); // Route to full access
+                    return DashboardScreen(messId: messId); 
                   },
                   loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
                   error: (_, __) => const Scaffold(body: Center(child: Text('Error loading status'))),
