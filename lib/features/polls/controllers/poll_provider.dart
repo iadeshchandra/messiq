@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../auth/controllers/auth_controller.dart';
 import '../models/poll_model.dart';
 
-// Stream all polls for this mess, ordered by newest first
 final messPollsProvider = StreamProvider.family<List<PollModel>, String>((ref, messId) {
   return FirebaseFirestore.instance
       .collection('messes')
@@ -20,52 +19,47 @@ class PollController {
   final Ref ref;
   PollController({required this.ref});
 
-  // Create a new poll and alert the whole mess
-  Future<void> createPoll(String messId, String question, List<String> options) async {
+  Future<void> createPoll(String messId, String question, List<String> options, {DateTime? expiresAt}) async {
     final user = ref.read(authStateProvider).value;
     if (user == null || question.isEmpty || options.isEmpty) return;
 
-    // Fetch the creator's name
     final userDoc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
     final userName = userDoc.data()?['name'] ?? 'Member';
 
     final docRef = FirebaseFirestore.instance.collection('messes').doc(messId).collection('polls').doc();
-
-    // Clean up empty options
     final validOptions = options.map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
 
     final newPoll = PollModel(
       id: docRef.id,
       question: question.trim(),
       options: validOptions,
-      votes: {}, // Empty map to start
+      votes: {},
       addedByUid: user.uid,
       addedByName: userName,
       createdAt: DateTime.now(),
       isActive: true,
+      expiresAt: expiresAt, // NEW: Saves the deadline
     );
 
     final batch = FirebaseFirestore.instance.batch();
     batch.set(docRef, newPoll.toMap());
 
-    // AUTO-TRIGGER NOTIFICATION TO EVERYONE
     final notifRef = FirebaseFirestore.instance.collection('messes').doc(messId).collection('notifications').doc();
     batch.set(notifRef, {
       'title': 'New Poll Created 📊',
       'body': '$userName asked: "$question". Tap to cast your vote!',
+      'targetRoute': 'polls', // DEEP LINK ACTIVATED
       'createdAt': Timestamp.now(),
-      'readBy': [], // Empty means unread by everyone
+      'readBy': [],
     });
 
     await batch.commit();
   }
 
-  // Cast or change a vote
   Future<void> voteOnPoll(String messId, String pollId, int optionIndex) async {
     final user = ref.read(authStateProvider).value;
     if (user == null) return;
 
-    // We use dot notation to update just this user's vote inside the map
     await FirebaseFirestore.instance
         .collection('messes')
         .doc(messId)
@@ -76,7 +70,6 @@ class PollController {
         });
   }
 
-  // Lock the poll so no more votes can be cast
   Future<void> closePoll(String messId, String pollId) async {
     await FirebaseFirestore.instance
         .collection('messes')
@@ -86,7 +79,6 @@ class PollController {
         .update({'isActive': false});
   }
 
-  // Completely delete the poll
   Future<void> deletePoll(String messId, String pollId) async {
     await FirebaseFirestore.instance
         .collection('messes')
