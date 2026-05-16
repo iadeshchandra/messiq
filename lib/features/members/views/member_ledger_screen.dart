@@ -1,8 +1,12 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../auth/models/user_model.dart';
 import '../../finance/controllers/finance_provider.dart';
+import '../../finance/services/pdf_service.dart';
+import '../../dashboard/controllers/dashboard_providers.dart';
 
 class MemberLedgerScreen extends ConsumerStatefulWidget {
   final UserModel member;
@@ -16,6 +20,7 @@ class MemberLedgerScreen extends ConsumerStatefulWidget {
 
 class _MemberLedgerScreenState extends ConsumerState<MemberLedgerScreen> {
   DateTimeRange? _selectedRange;
+  bool _isExporting = false;
 
   Future<void> _pickDateRange() async {
     final DateTimeRange? picked = await showDateRangePicker(
@@ -46,9 +51,114 @@ class _MemberLedgerScreenState extends ConsumerState<MemberLedgerScreen> {
 
   bool _isWithinRange(DateTime date) {
     if (_selectedRange == null) return true;
-    // Add 1 day to the end date to include the full final day
     return date.isAfter(_selectedRange!.start.subtract(const Duration(seconds: 1))) && 
            date.isBefore(_selectedRange!.end.add(const Duration(days: 1)));
+  }
+
+  // NEW: PDF EXPORT LOGIC
+  Future<void> _exportLedgerPdf(BuildContext context) async {
+    setState(() => _isExporting = true);
+    try {
+      final messData = await ref.read(messDetailsProvider(widget.messId).future);
+      if (messData == null) throw Exception("Mess data not found.");
+
+      // Fetch all raw data
+      final allPayments = ref.read(messPaymentsProvider(widget.messId)).value ?? [];
+      final allMeals = ref.read(messMealsProvider(widget.messId)).value ?? [];
+      final allExpenses = ref.read(messExpensesProvider(widget.messId)).value ?? [];
+
+      // Filter data exactly like the UI does
+      final filteredPayments = allPayments.where((p) => p.memberUid == widget.member.uid && _isWithinRange(p.date)).toList();
+      final filteredMeals = allMeals.where((m) => m.memberMeals.containsKey(widget.member.uid) && m.memberMeals[widget.member.uid]! > 0 && _isWithinRange(m.date)).toList();
+      final filteredExpenses = allExpenses.where((e) => e.addedByUid == widget.member.uid && _isWithinRange(e.date)).toList();
+
+      String dateRangeText = _selectedRange == null 
+          ? 'All History' 
+          : '${_selectedRange!.start.toString().split(' ')[0]} to ${_selectedRange!.end.toString().split(' ')[0]}';
+
+      // Generate PDF
+      final File pdfFile = await PdfService.generateMemberLedgerPdf(
+        messName: messData.name,
+        member: widget.member,
+        dateRangeText: dateRangeText,
+        deposits: filteredPayments,
+        meals: filteredMeals,
+        expenses: filteredExpenses,
+      );
+
+      if (mounted) {
+        setState(() => _isExporting = false);
+        _showExportSuccessSheet(context, pdfFile);
+      }
+    } catch (e) {
+      setState(() => _isExporting = false);
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Export Failed: $e'), backgroundColor: Colors.red));
+    }
+  }
+
+  void _showExportSuccessSheet(BuildContext context, File pdfFile) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        padding: const EdgeInsets.all(24),
+        decoration: const BoxDecoration(color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(32))),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2))),
+            const SizedBox(height: 24),
+            const Icon(Icons.check_circle_rounded, color: Colors.green, size: 64),
+            const SizedBox(height: 16),
+            const Text('Ledger PDF Ready!', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppTheme.textDark)),
+            const SizedBox(height: 8),
+            Text('Activity report for ${widget.member.name} has been generated successfully.', textAlign: TextAlign.center, style: const TextStyle(color: Colors.grey)),
+            const SizedBox(height: 32),
+            
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                icon: const Icon(Icons.download_rounded),
+                label: const Text('Download to Device'),
+                style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryIndigo, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 16), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
+                onPressed: () async {
+                  try {
+                    final downloadDir = Directory('/storage/emulated/0/Download');
+                    if (await downloadDir.exists()) {
+                      final newPath = '${downloadDir.path}/${pdfFile.path.split('/').last}';
+                      await pdfFile.copy(newPath);
+                      if (ctx.mounted) {
+                        Navigator.pop(ctx);
+                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Saved successfully to Downloads!'), backgroundColor: Colors.green));
+                      }
+                    } else {
+                      throw Exception("Downloads folder not found.");
+                    }
+                  } catch (e) {
+                    if (ctx.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Failed to download: Try using Share to save.'), backgroundColor: Colors.orange));
+                  }
+                },
+              ),
+            ),
+            const SizedBox(height: 16),
+            
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                icon: const Icon(Icons.share_rounded),
+                label: const Text('Share Report'),
+                style: OutlinedButton.styleFrom(foregroundColor: AppTheme.primaryIndigo, side: const BorderSide(color: AppTheme.primaryIndigo), padding: const EdgeInsets.symmetric(vertical: 16), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
+                onPressed: () async {
+                  Navigator.pop(ctx);
+                  await Share.shareXFiles([XFile(pdfFile.path)], text: 'MessIQ Activity Ledger for ${widget.member.name}');
+                },
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -66,13 +176,13 @@ class _MemberLedgerScreenState extends ConsumerState<MemberLedgerScreen> {
           backgroundColor: AppTheme.backgroundLight,
           elevation: 0,
           actions: [
-            // PDF Button Placeholder (We will build this in the next step!)
-            IconButton(
-              icon: const Icon(Icons.picture_as_pdf_rounded, color: AppTheme.primaryIndigo),
-              onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('PDF Export coming in the next step!')));
-              },
-            )
+            if (_isExporting)
+              const Padding(padding: EdgeInsets.all(16.0), child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)))
+            else
+              IconButton(
+                icon: const Icon(Icons.picture_as_pdf_rounded, color: AppTheme.primaryIndigo),
+                onPressed: () => _exportLedgerPdf(context),
+              )
           ],
           bottom: const TabBar(
             labelColor: AppTheme.primaryIndigo,
@@ -134,7 +244,7 @@ class _MemberLedgerScreenState extends ConsumerState<MemberLedgerScreen> {
                           margin: const EdgeInsets.only(bottom: 12),
                           child: ListTile(
                             leading: const CircleAvatar(backgroundColor: Colors.green, child: Icon(Icons.add, color: Colors.white)),
-                            title: Text('Deposit', style: const TextStyle(fontWeight: FontWeight.bold)),
+                            title: const Text('Deposit', style: TextStyle(fontWeight: FontWeight.bold)),
                             subtitle: Text(filtered[i].date.toString().split(' ')[0]),
                             trailing: Text('৳${filtered[i].amount.toStringAsFixed(0)}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.green)),
                           ),
@@ -174,7 +284,6 @@ class _MemberLedgerScreenState extends ConsumerState<MemberLedgerScreen> {
                   // TAB 3: EXPENSES ADDED
                   expensesAsync.when(
                     data: (expenses) {
-                      // Filter by addedByUid to see what this user purchased for the mess
                       final filtered = expenses.where((e) => e.addedByUid == widget.member.uid && _isWithinRange(e.date)).toList();
                       if (filtered.isEmpty) return const Center(child: Text('No expenses added by this member.'));
 
