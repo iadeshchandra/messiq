@@ -10,7 +10,8 @@ import '../../finance/views/hisab_sheet_screen.dart';
 import '../../notifications/controllers/notification_provider.dart';
 import '../../notifications/views/notifications_screen.dart';
 import '../../bazaar/views/bazaar_list_screen.dart';
-import '../../polls/views/polls_screen.dart'; // NEW IMPORT
+import '../../polls/views/polls_screen.dart';
+import '../../duties/views/duty_roster_screen.dart'; // NEW IMPORT
 
 class DashboardHomeView extends ConsumerWidget {
   final String messId;
@@ -125,15 +126,27 @@ class DashboardHomeView extends ConsumerWidget {
             ),
             const SizedBox(height: 12),
             
-            // Row 2: Polls
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => PollsScreen(messId: messId))),
-                icon: const Icon(Icons.poll_rounded),
-                label: const Text('Meal Polls & Voting'),
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.white, foregroundColor: Colors.orange, side: const BorderSide(color: Colors.orange), padding: const EdgeInsets.symmetric(vertical: 16), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
-              ),
+            // Row 2: Polls & Duty Roster
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => PollsScreen(messId: messId))),
+                    icon: const Icon(Icons.poll_rounded),
+                    label: const Text('Meal Polls'),
+                    style: ElevatedButton.styleFrom(backgroundColor: Colors.white, foregroundColor: Colors.orange, side: const BorderSide(color: Colors.orange), padding: const EdgeInsets.symmetric(vertical: 16), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => DutyRosterScreen(messId: messId))),
+                    icon: const Icon(Icons.assignment_turned_in_rounded),
+                    label: const Text('Duty Roster'),
+                    style: ElevatedButton.styleFrom(backgroundColor: Colors.white, foregroundColor: Colors.purple, side: const BorderSide(color: Colors.purple), padding: const EdgeInsets.symmetric(vertical: 16), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 32),
 
