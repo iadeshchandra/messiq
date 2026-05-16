@@ -35,7 +35,6 @@ class _JoinMessScreenState extends ConsumerState<JoinMessScreen> {
         padding: const EdgeInsets.all(24.0),
         child: Column(
           children: [
-            // PROFESSIONAL UX: Friendly Instructions
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
@@ -65,10 +64,7 @@ class _JoinMessScreenState extends ConsumerState<JoinMessScreen> {
               onTap: _openScanner,
               child: Container(
                 padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: AppTheme.primaryIndigo.withOpacity(0.1),
-                  shape: BoxShape.circle,
-                ),
+                decoration: BoxDecoration(color: AppTheme.primaryIndigo.withOpacity(0.1), shape: BoxShape.circle),
                 child: const Icon(Icons.qr_code_scanner_rounded, size: 50, color: AppTheme.primaryIndigo),
               ),
             ),
@@ -101,10 +97,13 @@ class _JoinMessScreenState extends ConsumerState<JoinMessScreen> {
                     try {
                       await ref.read(messControllerProvider.notifier).joinMess(_codeController.text.trim());
                       if (context.mounted) {
-                        Navigator.pop(context); 
+                        // THE FIX: Destroys the Join screen and reveals AuthGate (Waiting Room)
+                        Navigator.of(context).popUntil((route) => route.isFirst);
                       }
                     } catch (e) {
-                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString()), backgroundColor: Colors.red));
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString()), backgroundColor: Colors.red));
+                      }
                     }
                   }
                 },
@@ -121,13 +120,9 @@ class _JoinMessScreenState extends ConsumerState<JoinMessScreen> {
             ),
             const SizedBox(height: 32),
             
-            // PROFESSIONAL UX: The Cross-Link Area
             Container(
               padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.grey.shade100,
-                borderRadius: BorderRadius.circular(16),
-              ),
+              decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(16)),
               child: Column(
                 children: [
                   const Text('Are you setting up a new place?', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
