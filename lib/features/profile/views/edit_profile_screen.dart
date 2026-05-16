@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../auth/controllers/auth_controller.dart';
 import '../controllers/profile_provider.dart';
 
 class EditProfileScreen extends ConsumerStatefulWidget {
@@ -27,7 +26,6 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   @override
   void initState() {
     super.initState();
-    // Initialize controllers with empty strings initially to prevent null errors
     _nameCtrl = TextEditingController();
     _phoneCtrl = TextEditingController();
     _presentAddressCtrl = TextEditingController();
@@ -91,7 +89,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final userState = ref.watch(authStateProvider);
+    // THE FIX: Watch the custom user profile so we have access to phone/ICE data
+    final userState = ref.watch(userProfileProvider);
 
     return Scaffold(
       backgroundColor: AppTheme.backgroundLight,
@@ -113,7 +112,6 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         data: (user) {
           if (user == null) return const Center(child: Text('User not found'));
 
-          // Populate the fields ONLY if they are currently empty (so we don't overwrite user typing)
           if (_nameCtrl.text.isEmpty && user.name.isNotEmpty) _nameCtrl.text = user.name;
           if (_phoneCtrl.text.isEmpty && user.phone != null) _phoneCtrl.text = user.phone!;
           if (_presentAddressCtrl.text.isEmpty && user.presentAddress != null) _presentAddressCtrl.text = user.presentAddress!;
@@ -141,7 +139,6 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                 const Text('ICE Vault (In Case of Emergency)', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.redAccent)),
                 const SizedBox(height: 16),
                 
-                // Blood Group Dropdown
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                   decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
