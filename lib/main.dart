@@ -1,26 +1,38 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'firebase_options.dart';
-import 'app.dart'; // This connects to your app.dart file!
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'core/theme/app_theme.dart';
+import 'features/splash/views/splash_screen.dart'; 
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
+  runApp(const ProviderScope(child: MessIQApp()));
+}
 
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+class MessIQApp extends StatelessWidget {
+  const MessIQApp({super.key});
 
-  // Offline-first setup
-  FirebaseFirestore.instance.settings = const Settings(
-    persistenceEnabled: true,
-    cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
-  );
-
-  runApp(
-    const ProviderScope(
-      child: MessIqApp(),
-    ),
-  );
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'MessIQ',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        primaryColor: AppTheme.primaryIndigo,
+        scaffoldBackgroundColor: AppTheme.backgroundLight,
+        appBarTheme: const AppBarTheme(
+          backgroundColor: AppTheme.backgroundLight,
+          elevation: 0,
+          iconTheme: IconThemeData(color: AppTheme.textDark),
+          titleTextStyle: TextStyle(
+            color: AppTheme.textDark, 
+            fontSize: 20, 
+            fontWeight: FontWeight.bold
+          ),
+        ),
+      ),
+      home: const SplashScreen(), 
+    );
+  }
 }
