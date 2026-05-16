@@ -1,6 +1,22 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../auth/controllers/auth_controller.dart';
+import '../../auth/models/user_model.dart';
+
+// NEW: This fetches the custom UserModel from Firestore so we can see addresses/ICE data
+final userProfileProvider = StreamProvider<UserModel?>((ref) {
+  final authUser = ref.watch(authStateProvider).value;
+  if (authUser == null) return Stream.value(null);
+
+  return FirebaseFirestore.instance.collection('users').doc(authUser.uid).snapshots().map((doc) {
+    if (doc.exists && doc.data() != null) {
+      final data = doc.data()!;
+      data['uid'] = doc.id; // Safe ID injection
+      return UserModel.fromMap(data);
+    }
+    return null;
+  });
+});
 
 final profileControllerProvider = Provider((ref) => ProfileController(ref: ref));
 
@@ -17,15 +33,12 @@ class ProfileController {
     required String iceName,
     required String icePhone,
   }) async {
-    // 1. Get the guaranteed authenticated user
     final user = ref.read(authStateProvider).value;
     
-    // 2. Safety check to prevent the 'path.isNotEmpty' crash!
     if (user == null || user.uid.isEmpty) {
       throw Exception('Authentication error: Unable to find your User ID.');
     }
 
-    // 3. Save the data using merge: true so it doesn't overwrite existing fields like activeMessId
     await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
       'name': name.trim(),
       'phone': phone.trim(),
