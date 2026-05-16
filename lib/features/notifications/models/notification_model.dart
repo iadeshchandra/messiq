@@ -4,10 +4,12 @@ class NotificationModel {
   final String id;
   final String title;
   final String body;
-  final String? targetRole; // e.g., 'manager' (null means it's for everyone or a specific UID)
-  final String? targetUid;  // e.g., 'user123' (null means it's for a role or everyone)
+  final String? targetRole; // e.g., 'manager'
+  final String? targetUid;  // e.g., 'user123'
+  final String? targetRoute; // NEW: The screen to open (e.g., 'duties', 'polls', 'profile')
+  final String? referenceId; // NEW: The specific item ID if needed
   final DateTime createdAt;
-  final List<String> readBy; // List of UIDs who have seen this
+  final List<String> readBy; 
 
   NotificationModel({
     required this.id,
@@ -15,6 +17,8 @@ class NotificationModel {
     required this.body,
     this.targetRole,
     this.targetUid,
+    this.targetRoute,
+    this.referenceId,
     required this.createdAt,
     required this.readBy,
   });
@@ -26,6 +30,8 @@ class NotificationModel {
       'body': body,
       'targetRole': targetRole,
       'targetUid': targetUid,
+      'targetRoute': targetRoute,
+      'referenceId': referenceId,
       'createdAt': Timestamp.fromDate(createdAt),
       'readBy': readBy,
     };
@@ -47,6 +53,8 @@ class NotificationModel {
       body: map['body']?.toString() ?? '',
       targetRole: map['targetRole']?.toString(),
       targetUid: map['targetUid']?.toString(),
+      targetRoute: map['targetRoute']?.toString(),
+      referenceId: map['referenceId']?.toString(),
       createdAt: parsedDate,
       readBy: List<String>.from(map['readBy'] ?? []),
     );
