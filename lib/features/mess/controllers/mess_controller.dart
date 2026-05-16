@@ -1,22 +1,24 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import '../repositories/mess_repository.dart';
+import '../../auth/controllers/auth_controller.dart';
 
 final messControllerProvider = StateNotifierProvider<MessController, bool>((ref) {
-  return MessController(messRepository: ref.watch(messRepositoryProvider));
+  return MessController(messRepository: ref.read(messRepositoryProvider), ref: ref);
 });
 
 class MessController extends StateNotifier<bool> {
   final MessRepository _messRepository;
+  final Ref _ref;
 
-  MessController({required MessRepository messRepository})
+  MessController({required MessRepository messRepository, required Ref ref})
       : _messRepository = messRepository,
+        _ref = ref,
         super(false);
 
   Future<void> createMess(String name) async {
     state = true;
     try {
-      final userId = FirebaseAuth.instance.currentUser!.uid;
+      final userId = _ref.read(authStateProvider).value!.uid;
       await _messRepository.createMess(name, userId);
     } finally {
       state = false;
@@ -26,8 +28,8 @@ class MessController extends StateNotifier<bool> {
   Future<void> joinMess(String inviteCode) async {
     state = true;
     try {
-      final userId = FirebaseAuth.instance.currentUser!.uid;
-      await _messRepository.joinMess(inviteCode.toUpperCase(), userId);
+      final userId = _ref.read(authStateProvider).value!.uid;
+      await _messRepository.joinMess(inviteCode, userId);
     } finally {
       state = false;
     }
