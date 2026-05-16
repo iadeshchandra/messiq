@@ -4,9 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../auth/models/user_model.dart';
 import 'member_ledger_screen.dart';
-import '../../duties/controllers/duty_provider.dart'; // NEW IMPORT
+import '../../duties/controllers/duty_provider.dart'; 
 
-// CHANGED TO ConsumerStatefulWidget TO LISTEN TO DUTIES
 class MemberDetailScreen extends ConsumerStatefulWidget {
   final UserModel member;
   final bool isManager;
@@ -160,23 +159,42 @@ class _MemberDetailScreenState extends ConsumerState<MemberDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // NEW: Listen to duties to calculate the Karma Score
+    // FETCH DUTIES FOR KARMA MATH
     final dutiesAsync = ref.watch(messDutiesProvider(widget.messId));
 
     double karmaScore = 100.0;
     int totalDuties = 0;
     int completedDuties = 0;
+    int pastDueDuties = 0;
 
     if (dutiesAsync.value != null) {
       final memberDuties = dutiesAsync.value!.where((d) => d.assignedToUid == widget.member.uid).toList();
       totalDuties = memberDuties.length;
       completedDuties = memberDuties.where((d) => d.isCompleted).length;
+
+      // STRICT ALGORITHM: Calculate Past Due
+      for (var duty in memberDuties) {
+        if (!duty.isCompleted) {
+          bool isPastDue = false;
+          if (duty.dueTime != null) {
+            isPastDue = DateTime.now().isAfter(duty.dueTime!);
+          } else {
+            final today = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
+            final assignedDay = DateTime(duty.assignedDate.year, duty.assignedDate.month, duty.assignedDate.day);
+            isPastDue = assignedDay.isBefore(today);
+          }
+          if (isPastDue) pastDueDuties++;
+        }
+      }
+
       if (totalDuties > 0) {
-        karmaScore = (completedDuties / totalDuties) * 100;
+        double baseScore = (completedDuties / totalDuties) * 100;
+        // PENALTY: Minus 20% for every past due task
+        karmaScore = baseScore - (pastDueDuties * 20.0);
+        if (karmaScore < 0) karmaScore = 0; // Hard floor at 0%
       }
     }
 
-    // Determine color based on performance
     Color performanceColor = Colors.green;
     if (karmaScore < 50) performanceColor = Colors.redAccent;
     else if (karmaScore < 80) performanceColor = Colors.orange;
@@ -281,10 +299,10 @@ class _MemberDetailScreenState extends ConsumerState<MemberDetailScreen> {
                 ),
                 const SizedBox(height: 24),
 
-                // NEW: THE KARMA SCORE (PERFORMANCE ENGINE)
+                // STRICT KARMA SCORE CARD
                 Container(
                   padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20)),
+                  decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), border: Border.all(color: pastDueDuties > 0 ? Colors.redAccent.withOpacity(0.3) : Colors.transparent)),
                   child: Row(
                     children: [
                       SizedBox(
@@ -321,6 +339,14 @@ class _MemberDetailScreenState extends ConsumerState<MemberDetailScreen> {
                                 : 'Completed $completedDuties out of $totalDuties assigned duties.',
                               style: const TextStyle(color: Colors.grey, fontSize: 12),
                             ),
+                            if (pastDueDuties > 0) ...[
+                              const SizedBox(height: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(color: Colors.redAccent.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
+                                child: Text('⚠️ $pastDueDuties Past Due (-${pastDueDuties * 20}% Penalty)', style: const TextStyle(color: Colors.redAccent, fontSize: 10, fontWeight: FontWeight.bold)),
+                              )
+                            ]
                           ],
                         ),
                       ),
