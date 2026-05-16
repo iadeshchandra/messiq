@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../dashboard/controllers/dashboard_providers.dart';
 import '../../mess/repositories/mess_repository.dart';
@@ -11,11 +12,59 @@ class MembersListScreen extends ConsumerWidget {
   final String messId;
   const MembersListScreen({super.key, required this.messId});
 
-  void _shareInvite(BuildContext context, WidgetRef ref) async {
+  // NEW: Smart QR Code & Share Dialog
+  void _showInviteDialog(BuildContext context, WidgetRef ref) async {
     final messData = await ref.read(messDetailsProvider(messId).future);
-    if (messData != null) {
-      Share.share("🏠 Join our workspace '${messData.name}' on MessIQ!\n\nDownload the app and enter this exact Invite Code to request access:\n\n👉 ${messData.inviteCode} 👈");
-    }
+    if (messData == null || !context.mounted) return;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: const Text('Invite Friends', textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('Have them scan this code:', style: TextStyle(color: Colors.grey)),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white, 
+                borderRadius: BorderRadius.circular(16), 
+                border: Border.all(color: AppTheme.primaryIndigo.withOpacity(0.2))
+              ),
+              child: QrImageView(
+                data: messData.inviteCode,
+                version: QrVersions.auto,
+                size: 180.0,
+                foregroundColor: AppTheme.primaryIndigo,
+              ),
+            ),
+            const SizedBox(height: 24),
+            const Text('Or use this manual code:', style: TextStyle(color: Colors.grey)),
+            const SizedBox(height: 8),
+            Text(
+              messData.inviteCode, 
+              style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, letterSpacing: 8, color: AppTheme.textDark)
+            ),
+          ],
+        ),
+        actionsAlignment: MainAxisAlignment.center,
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close', style: TextStyle(color: Colors.grey))),
+          ElevatedButton.icon(
+            onPressed: () {
+              Navigator.pop(ctx);
+              Share.share("🏠 Join our workspace '${messData.name}' on MessIQ!\n\nDownload the app and enter this exact Invite Code:\n\n👉 ${messData.inviteCode} 👈");
+            },
+            icon: const Icon(Icons.share_rounded, size: 18),
+            label: const Text('Share Link'),
+            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryIndigo, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -33,10 +82,10 @@ class MembersListScreen extends ConsumerWidget {
         backgroundColor: AppTheme.backgroundLight,
         elevation: 0,
         actions: [
-          // THE VIRAL SHARE BUTTON
+          // Triggers the QR popup
           IconButton(
-            icon: const Icon(Icons.person_add_alt_1_rounded, color: AppTheme.primaryIndigo),
-            onPressed: () => _shareInvite(context, ref),
+            icon: const Icon(Icons.qr_code_2_rounded, color: AppTheme.primaryIndigo, size: 28),
+            onPressed: () => _showInviteDialog(context, ref),
           ),
         ],
       ),
@@ -47,7 +96,6 @@ class MembersListScreen extends ConsumerWidget {
           List<UserModel> pendingUsers = [];
           List<UserModel> activeUsers = [];
 
-          // Sort users into the correct bucket based on status
           for (var user in users) {
             final doc = statusDocs.firstWhere((d) => d['uid'] == user.uid, orElse: () => {});
             if (doc['status'] == 'pending') {
@@ -62,7 +110,7 @@ class MembersListScreen extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // PENDING APPROVALS SECTION (Only visible to Managers if there are requests)
+                // PENDING APPROVALS SECTION
                 if (isManager && pendingUsers.isNotEmpty) ...[
                   const Row(
                     children: [
