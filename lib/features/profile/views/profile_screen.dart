@@ -43,7 +43,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  // THE FIX: Removed "WidgetRef ref" from this line because ConsumerState already has 'ref' built-in.
+  Widget build(BuildContext context) { 
     final authUser = ref.watch(authStateProvider).value;
     final memberData = ref.watch(currentMemberRoleProvider(widget.messId));
 
