@@ -28,7 +28,6 @@ class _CreateMessScreenState extends ConsumerState<CreateMessScreen> {
             const Icon(Icons.home_work_rounded, size: 80, color: AppTheme.primaryIndigo),
             const SizedBox(height: 24),
             
-            // PROFESSIONAL UX: Friendly, polite, and helpful banner
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
@@ -71,8 +70,17 @@ class _CreateMessScreenState extends ConsumerState<CreateMessScreen> {
             ElevatedButton(
               onPressed: isLoading ? null : () async {
                 if (_nameController.text.isNotEmpty) {
-                  await ref.read(messControllerProvider.notifier).createMess(_nameController.text.trim());
-                  if (context.mounted) Navigator.pop(context); 
+                  try {
+                    await ref.read(messControllerProvider.notifier).createMess(_nameController.text.trim());
+                    if (context.mounted) {
+                      // THE FIX: Destroys the Create screen and reveals AuthGate (Dashboard)
+                      Navigator.of(context).popUntil((route) => route.isFirst);
+                    }
+                  } catch (e) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString()), backgroundColor: Colors.red));
+                    }
+                  }
                 }
               },
               style: ElevatedButton.styleFrom(
@@ -87,13 +95,9 @@ class _CreateMessScreenState extends ConsumerState<CreateMessScreen> {
             ),
             const SizedBox(height: 32),
             
-            // PROFESSIONAL UX: The Cross-Link Area (Made much larger and friendlier)
             Container(
               padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.grey.shade100,
-                borderRadius: BorderRadius.circular(16),
-              ),
+              decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(16)),
               child: Column(
                 children: [
                   const Text('Did your friends already create one?', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
