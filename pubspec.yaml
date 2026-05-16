@@ -9,25 +9,39 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  
+
   firebase_core: ^2.24.2
   firebase_auth: ^4.15.3
   cloud_firestore: ^4.13.6
-  
+
   flutter_riverpod: ^2.4.9
   google_fonts: ^6.1.0
   mobile_scanner: ^4.0.0
   pdf: ^3.10.8
   path_provider: ^2.1.2
   share_plus: ^7.2.1
-  
-  # NEW: Used to generate the QR Code Image
+
+  # Used to generate the QR Code Image
   qr_flutter: ^4.1.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^3.0.1
+  # NEW: Package to auto-generate the App Icons
+  flutter_launcher_icons: ^0.13.1
 
 flutter:
   uses-material-design: true
+  
+  # NEW: Declaring the assets folder for your logo
+  assets:
+    - assets/
+
+# NEW: App Icon Generator Configuration
+flutter_icons:
+  android: true
+  ios: true
+  image_path: "assets/messiq_logo.svg" # Change to "assets/app_logo.png" if you use a PNG
+  adaptive_icon_background: "#4F46E5"
+  adaptive_icon_foreground: "assets/messiq_logo.svg" # Change to "assets/app_logo.png" if you use a PNG
