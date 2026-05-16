@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../auth/models/user_model.dart';
-import 'member_ledger_screen.dart'; 
+import 'member_ledger_screen.dart';
+import '../../duties/controllers/duty_provider.dart'; // NEW IMPORT
 
-class MemberDetailScreen extends StatefulWidget {
+// CHANGED TO ConsumerStatefulWidget TO LISTEN TO DUTIES
+class MemberDetailScreen extends ConsumerStatefulWidget {
   final UserModel member;
   final bool isManager;
   final String messId;
@@ -17,10 +20,10 @@ class MemberDetailScreen extends StatefulWidget {
   });
 
   @override
-  State<MemberDetailScreen> createState() => _MemberDetailScreenState();
+  ConsumerState<MemberDetailScreen> createState() => _MemberDetailScreenState();
 }
 
-class _MemberDetailScreenState extends State<MemberDetailScreen> {
+class _MemberDetailScreenState extends ConsumerState<MemberDetailScreen> {
   bool _isLoading = false;
 
   void _kickMember(BuildContext context) async {
@@ -157,6 +160,27 @@ class _MemberDetailScreenState extends State<MemberDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // NEW: Listen to duties to calculate the Karma Score
+    final dutiesAsync = ref.watch(messDutiesProvider(widget.messId));
+
+    double karmaScore = 100.0;
+    int totalDuties = 0;
+    int completedDuties = 0;
+
+    if (dutiesAsync.value != null) {
+      final memberDuties = dutiesAsync.value!.where((d) => d.assignedToUid == widget.member.uid).toList();
+      totalDuties = memberDuties.length;
+      completedDuties = memberDuties.where((d) => d.isCompleted).length;
+      if (totalDuties > 0) {
+        karmaScore = (completedDuties / totalDuties) * 100;
+      }
+    }
+
+    // Determine color based on performance
+    Color performanceColor = Colors.green;
+    if (karmaScore < 50) performanceColor = Colors.redAccent;
+    else if (karmaScore < 80) performanceColor = Colors.orange;
+
     return Scaffold(
       backgroundColor: AppTheme.backgroundLight,
       appBar: AppBar(
@@ -252,6 +276,54 @@ class _MemberDetailScreenState extends State<MemberDetailScreen> {
                       ),
                       const SizedBox(height: 12),
                       Text(_generateSmartOverview(currentRole), style: const TextStyle(color: Colors.white, height: 1.5, fontSize: 14)),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+
+                // NEW: THE KARMA SCORE (PERFORMANCE ENGINE)
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20)),
+                  child: Row(
+                    children: [
+                      SizedBox(
+                        width: 80,
+                        height: 80,
+                        child: Stack(
+                          fit: StackFit.expand,
+                          children: [
+                            CircularProgressIndicator(
+                              value: totalDuties == 0 ? 1.0 : karmaScore / 100,
+                              strokeWidth: 8,
+                              backgroundColor: Colors.grey.shade200,
+                              color: performanceColor,
+                            ),
+                            Center(
+                              child: Text(
+                                '${karmaScore.toStringAsFixed(0)}%',
+                                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: performanceColor),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 20),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text('Performance Score', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.textDark)),
+                            const SizedBox(height: 4),
+                            Text(
+                              totalDuties == 0 
+                                ? 'No duties assigned yet. Score defaults to 100%.' 
+                                : 'Completed $completedDuties out of $totalDuties assigned duties.',
+                              style: const TextStyle(color: Colors.grey, fontSize: 12),
+                            ),
+                          ],
+                        ),
+                      ),
                     ],
                   ),
                 ),
