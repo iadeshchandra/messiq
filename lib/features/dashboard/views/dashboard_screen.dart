@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_theme.dart';
 import 'dashboard_home_view.dart';
+import '../../members/views/members_list_screen.dart'; // New Import
 import '../../profile/views/profile_screen.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
@@ -17,9 +18,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Array of the screens we can navigate to
     final List<Widget> screens = [
       DashboardHomeView(messId: widget.messId),
+      MembersListScreen(messId: widget.messId), // NEW: The Directory Tab
       ProfileScreen(messId: widget.messId),
     ];
 
@@ -33,6 +34,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         indicatorColor: AppTheme.primaryIndigo.withOpacity(0.2),
         destinations: const [
           NavigationDestination(icon: Icon(Icons.dashboard_outlined), selectedIcon: Icon(Icons.dashboard_rounded, color: AppTheme.primaryIndigo), label: 'Dashboard'),
+          NavigationDestination(icon: Icon(Icons.people_outline_rounded), selectedIcon: Icon(Icons.people_alt_rounded, color: AppTheme.primaryIndigo), label: 'Members'),
           NavigationDestination(icon: Icon(Icons.person_outline_rounded), selectedIcon: Icon(Icons.person_rounded, color: AppTheme.primaryIndigo), label: 'Profile'),
         ],
       ),
