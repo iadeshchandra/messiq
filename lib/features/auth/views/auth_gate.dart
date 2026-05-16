@@ -21,18 +21,31 @@ class AuthGate extends ConsumerWidget {
           final messState = ref.watch(activeMessProvider);
           return messState.when(
             data: (messId) {
-              // SAFETY CHECK: Ensure messId is valid before letting them in
               if (messId != null && messId.isNotEmpty) {
                 final memberRole = ref.watch(currentMemberRoleProvider(messId));
                 return memberRole.when(
                   data: (member) {
+                    // Route to waiting room if status is pending
                     if (member?.status == 'pending') {
                       return WaitingRoomScreen(messId: messId); 
                     }
+                    // Otherwise, route to the main dashboard
                     return DashboardScreen(messId: messId); 
                   },
                   loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
-                  error: (_, __) => const Scaffold(body: Center(child: Text('Error loading status'))),
+                  // THE FIX: Actually print the error '$e' so we know exactly what went wrong
+                  error: (e, __) => Scaffold(
+                    body: Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(24.0),
+                        child: Text(
+                          'Error loading status:\n$e', 
+                          textAlign: TextAlign.center, 
+                          style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold)
+                        ),
+                      ),
+                    ),
+                  ),
                 );
               }
               return const MessSelectionScreen();
