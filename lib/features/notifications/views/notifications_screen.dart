@@ -4,6 +4,11 @@ import '../../../core/theme/app_theme.dart';
 import '../../auth/controllers/auth_controller.dart';
 import '../controllers/notification_provider.dart';
 
+// Import target screens for Deep Linking
+import '../../duties/views/duty_roster_screen.dart';
+import '../../polls/views/polls_screen.dart';
+import '../../profile/views/profile_screen.dart';
+
 class NotificationsScreen extends ConsumerWidget {
   final String messId;
   const NotificationsScreen({super.key, required this.messId});
@@ -14,6 +19,25 @@ class NotificationsScreen extends ConsumerWidget {
     if (diff.inHours > 0) return '${diff.inHours}h ago';
     if (diff.inMinutes > 0) return '${diff.inMinutes}m ago';
     return 'Just now';
+  }
+
+  void _handleDeepLink(BuildContext context, String? route) {
+    if (route == null) return;
+    
+    switch (route) {
+      case 'duties':
+        Navigator.push(context, MaterialPageRoute(builder: (_) => DutyRosterScreen(messId: messId)));
+        break;
+      case 'polls':
+        Navigator.push(context, MaterialPageRoute(builder: (_) => PollsScreen(messId: messId)));
+        break;
+      case 'profile':
+        Navigator.push(context, MaterialPageRoute(builder: (_) => ProfileScreen(messId: messId)));
+        break;
+      default:
+        // If route is unknown, do nothing
+        break;
+    }
   }
 
   @override
@@ -52,9 +76,14 @@ class NotificationsScreen extends ConsumerWidget {
               final isUnread = currentUser != null && !notif.readBy.contains(currentUser.uid);
 
               return GestureDetector(
-                onTap: () {
+                onTap: () async {
+                  // 1. Mark as read
                   if (isUnread && currentUser != null) {
-                    ref.read(notificationControllerProvider).markAsRead(messId, notif.id, currentUser.uid);
+                    await ref.read(notificationControllerProvider).markAsRead(messId, notif.id, currentUser.uid);
+                  }
+                  // 2. Deep Link to the specific screen if a route exists
+                  if (context.mounted) {
+                    _handleDeepLink(context, notif.targetRoute);
                   }
                 },
                 child: Container(
@@ -94,6 +123,18 @@ class NotificationsScreen extends ConsumerWidget {
                             ),
                             const SizedBox(height: 4),
                             Text(notif.body, style: TextStyle(color: Colors.grey.shade700, height: 1.4)),
+                            
+                            // Visual cue that this notification is clickable
+                            if (notif.targetRoute != null) ...[
+                              const SizedBox(height: 8),
+                              const Row(
+                                children: [
+                                  Text('Tap to view', style: TextStyle(fontSize: 12, color: AppTheme.primaryIndigo, fontWeight: FontWeight.bold)),
+                                  SizedBox(width: 4),
+                                  Icon(Icons.arrow_forward_rounded, size: 12, color: AppTheme.primaryIndigo),
+                                ],
+                              )
+                            ]
                           ],
                         ),
                       ),
