@@ -25,19 +25,15 @@ jobs:
         channel: 'stable'
         cache: true
 
-    # 🚨 THE ULTIMATE RESET 🚨
     - name: Delete Corrupted Android Folder
       run: rm -rf android
 
     - name: Regenerate Pristine Android Folder
       run: flutter create --platforms=android --org com.trackiq .
-    # -------------------------
 
     - name: Get Dependencies
       run: flutter pub get
 
-    # 🎨 NEW: GENERATE THE APP ICON ON THE SERVER
-    # This runs right after the Android folder is created so the icons are fresh!
     - name: Generate App Icons
       run: flutter pub run flutter_launcher_icons
 
