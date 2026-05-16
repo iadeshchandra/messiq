@@ -1,34 +1,40 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../auth/controllers/auth_controller.dart';
+import 'dashboard_home_view.dart';
+import '../../profile/views/profile_screen.dart';
 
-class DashboardScreen extends ConsumerWidget {
+class DashboardScreen extends ConsumerStatefulWidget {
   final String messId;
   const DashboardScreen({super.key, required this.messId});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends ConsumerState<DashboardScreen> {
+  int _currentIndex = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    // Array of the screens we can navigate to
+    final List<Widget> screens = [
+      DashboardHomeView(messId: widget.messId),
+      ProfileScreen(messId: widget.messId),
+    ];
+
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Mess Dashboard'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () => ref.read(authControllerProvider.notifier).logout(),
-          )
+      body: screens[_currentIndex],
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: _currentIndex,
+        onDestinationSelected: (index) => setState(() => _currentIndex = index),
+        backgroundColor: Colors.white,
+        elevation: 10,
+        indicatorColor: AppTheme.primaryIndigo.withOpacity(0.2),
+        destinations: const [
+          NavigationDestination(icon: Icon(Icons.dashboard_outlined), selectedIcon: Icon(Icons.dashboard_rounded, color: AppTheme.primaryIndigo), label: 'Dashboard'),
+          NavigationDestination(icon: Icon(Icons.person_outline_rounded), selectedIcon: Icon(Icons.person_rounded, color: AppTheme.primaryIndigo), label: 'Profile'),
         ],
-      ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.check_circle, color: AppTheme.primaryIndigo, size: 80),
-            const SizedBox(height: 16),
-            const Text('Welcome to your Workspace!', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-            Text('Mess ID: $messId', style: const TextStyle(color: Colors.grey)),
-          ],
-        ),
       ),
     );
   }
