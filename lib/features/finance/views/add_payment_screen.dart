@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../dashboard/controllers/dashboard_providers.dart';
 import '../controllers/finance_provider.dart';
+import '../../dashboard/controllers/dashboard_providers.dart';
+import '../../auth/models/user_model.dart';
 
 class AddPaymentScreen extends ConsumerStatefulWidget {
   final String messId;
@@ -14,57 +15,106 @@ class AddPaymentScreen extends ConsumerStatefulWidget {
 
 class _AddPaymentScreenState extends ConsumerState<AddPaymentScreen> {
   final _amountCtrl = TextEditingController();
-  String? _selectedMemberUid;
+  final _noteCtrl = TextEditingController(); // NEW: The Note Controller
+  UserModel? _selectedMember;
+  DateTime _date = DateTime.now();
+  bool _isLoading = false;
 
-  Future<void> _submit() async {
-    if (_amountCtrl.text.isEmpty || _selectedMemberUid == null) return;
-    try {
-      await ref.read(financeControllerProvider.notifier).addPayment(
-        widget.messId,
-        _selectedMemberUid!,
-        double.parse(_amountCtrl.text.trim()),
-        DateTime.now(),
-      );
-      if (mounted) Navigator.pop(context);
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
-    }
+  @override
+  void dispose() {
+    _amountCtrl.dispose();
+    _noteCtrl.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final membersAsync = ref.watch(messMembersDirectoryProvider(widget.messId));
-    final isLoading = ref.watch(financeControllerProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Log Member Deposit')),
+      backgroundColor: AppTheme.backgroundLight,
+      appBar: AppBar(title: const Text('Log Deposit', style: TextStyle(fontWeight: FontWeight.bold)), backgroundColor: AppTheme.backgroundLight, elevation: 0),
       body: membersAsync.when(
         data: (members) {
           if (members.isEmpty) return const Center(child: Text('No members found.'));
           return SingleChildScrollView(
             padding: const EdgeInsets.all(24),
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                DropdownButtonFormField<String>(
-                  value: _selectedMemberUid,
-                  hint: const Text('Select Member'),
-                  decoration: InputDecoration(filled: true, fillColor: Colors.white, border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none)),
-                  items: members.map((m) => DropdownMenuItem(value: m.uid, child: Text(m.name))).toList(),
-                  onChanged: (val) => setState(() => _selectedMemberUid = val),
+                const Text('Select Member', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
+                  child: DropdownButtonFormField<UserModel>(
+                    value: _selectedMember,
+                    decoration: const InputDecoration(border: InputBorder.none, icon: Icon(Icons.person, color: AppTheme.primaryIndigo)),
+                    items: members.map((m) => DropdownMenuItem(value: m, child: Text(m.name))).toList(),
+                    onChanged: (val) => setState(() => _selectedMember = val),
+                  ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 20),
+                
+                const Text('Amount (৳)', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
+                const SizedBox(height: 8),
                 TextField(
                   controller: _amountCtrl,
                   keyboardType: TextInputType.number,
-                  decoration: InputDecoration(hintText: 'Deposit Amount (৳)', prefixIcon: const Icon(Icons.payments_rounded), filled: true, fillColor: Colors.white, border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none)),
+                  decoration: InputDecoration(filled: true, fillColor: Colors.white, prefixIcon: const Icon(Icons.attach_money, color: Colors.green), border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none)),
+                ),
+                const SizedBox(height: 20),
+
+                const Text('Deposit Date', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
+                const SizedBox(height: 8),
+                ListTile(
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  tileColor: Colors.white,
+                  leading: const Icon(Icons.calendar_today, color: AppTheme.primaryIndigo),
+                  title: Text(_date.toString().split(' ')[0]),
+                  onTap: () async {
+                    final picked = await showDatePicker(context: context, initialDate: _date, firstDate: DateTime(2020), lastDate: DateTime.now());
+                    if (picked != null) setState(() => _date = picked);
+                  },
+                ),
+                const SizedBox(height: 20),
+
+                // NEW: ACCOUNTABILITY NOTE UI
+                const Text('Manager Note (Optional)', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _noteCtrl,
+                  textCapitalization: TextCapitalization.sentences,
+                  decoration: InputDecoration(hintText: 'e.g., Handed via bKash, received by Rahim', filled: true, fillColor: Colors.white, prefixIcon: const Icon(Icons.edit_note_rounded, color: Colors.orange), border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none)),
                 ),
                 const SizedBox(height: 32),
+
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: isLoading ? null : _submit,
                     style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryIndigo, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 16), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
-                    child: isLoading ? const CircularProgressIndicator(color: Colors.white) : const Text('Save Deposit', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                    onPressed: _isLoading ? null : () async {
+                      if (_selectedMember != null && _amountCtrl.text.isNotEmpty) {
+                        setState(() => _isLoading = true);
+                        try {
+                          await ref.read(financeControllerProvider).addPayment(
+                            widget.messId, 
+                            _selectedMember!.uid, 
+                            double.parse(_amountCtrl.text), 
+                            _date,
+                            note: _noteCtrl.text.trim().isEmpty ? null : _noteCtrl.text.trim(), // Send the note!
+                          );
+                          if (mounted) {
+                            Navigator.pop(context);
+                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Deposit logged securely!'), backgroundColor: Colors.green));
+                          }
+                        } catch (e) {
+                          if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red));
+                          setState(() => _isLoading = false);
+                        }
+                      }
+                    },
+                    child: _isLoading ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) : const Text('Save Deposit', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                   ),
                 ),
               ],
