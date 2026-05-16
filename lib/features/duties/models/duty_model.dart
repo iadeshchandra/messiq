@@ -2,10 +2,11 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 class DutyModel {
   final String id;
-  final String title; // e.g., "Bazaar Duty", "Room Cleaning"
+  final String title; 
   final String assignedToUid;
   final String assignedToName;
   final DateTime assignedDate;
+  final DateTime? dueTime; // NEW: Precise deadline
   final bool isCompleted;
   final String addedByUid;
   final DateTime createdAt;
@@ -16,6 +17,7 @@ class DutyModel {
     required this.assignedToUid,
     required this.assignedToName,
     required this.assignedDate,
+    this.dueTime,
     this.isCompleted = false,
     required this.addedByUid,
     required this.createdAt,
@@ -28,6 +30,7 @@ class DutyModel {
       'assignedToUid': assignedToUid,
       'assignedToName': assignedToName,
       'assignedDate': Timestamp.fromDate(assignedDate),
+      if (dueTime != null) 'dueTime': Timestamp.fromDate(dueTime!),
       'isCompleted': isCompleted,
       'addedByUid': addedByUid,
       'createdAt': Timestamp.fromDate(createdAt),
@@ -35,7 +38,6 @@ class DutyModel {
   }
 
   factory DutyModel.fromMap(Map<String, dynamic> map, String docId) {
-    // Indestructible Assigned Date Parsing
     DateTime parsedAssignedDate = DateTime.now();
     if (map['assignedDate'] != null) {
       if (map['assignedDate'] is Timestamp) {
@@ -45,7 +47,15 @@ class DutyModel {
       }
     }
 
-    // Indestructible Created At Parsing
+    DateTime? parsedDueTime;
+    if (map['dueTime'] != null) {
+      if (map['dueTime'] is Timestamp) {
+        parsedDueTime = (map['dueTime'] as Timestamp).toDate();
+      } else if (map['dueTime'] is String) {
+        parsedDueTime = DateTime.tryParse(map['dueTime']);
+      }
+    }
+
     DateTime parsedCreatedAt = DateTime.now();
     if (map['createdAt'] != null) {
       if (map['createdAt'] is Timestamp) {
@@ -61,6 +71,7 @@ class DutyModel {
       assignedToUid: map['assignedToUid']?.toString() ?? '',
       assignedToName: map['assignedToName']?.toString() ?? 'Member',
       assignedDate: parsedAssignedDate,
+      dueTime: parsedDueTime,
       isCompleted: map['isCompleted'] ?? false,
       addedByUid: map['addedByUid']?.toString() ?? '',
       createdAt: parsedCreatedAt,
