@@ -55,19 +55,16 @@ class _MemberLedgerScreenState extends ConsumerState<MemberLedgerScreen> {
            date.isBefore(_selectedRange!.end.add(const Duration(days: 1)));
   }
 
-  // NEW: PDF EXPORT LOGIC
   Future<void> _exportLedgerPdf(BuildContext context) async {
     setState(() => _isExporting = true);
     try {
       final messData = await ref.read(messDetailsProvider(widget.messId).future);
       if (messData == null) throw Exception("Mess data not found.");
 
-      // Fetch all raw data
       final allPayments = ref.read(messPaymentsProvider(widget.messId)).value ?? [];
       final allMeals = ref.read(messMealsProvider(widget.messId)).value ?? [];
       final allExpenses = ref.read(messExpensesProvider(widget.messId)).value ?? [];
 
-      // Filter data exactly like the UI does
       final filteredPayments = allPayments.where((p) => p.memberUid == widget.member.uid && _isWithinRange(p.date)).toList();
       final filteredMeals = allMeals.where((m) => m.memberMeals.containsKey(widget.member.uid) && m.memberMeals[widget.member.uid]! > 0 && _isWithinRange(m.date)).toList();
       final filteredExpenses = allExpenses.where((e) => e.addedByUid == widget.member.uid && _isWithinRange(e.date)).toList();
@@ -76,7 +73,6 @@ class _MemberLedgerScreenState extends ConsumerState<MemberLedgerScreen> {
           ? 'All History' 
           : '${_selectedRange!.start.toString().split(' ')[0]} to ${_selectedRange!.end.toString().split(' ')[0]}';
 
-      // Generate PDF
       final File pdfFile = await PdfService.generateMemberLedgerPdf(
         messName: messData.name,
         member: widget.member,
@@ -197,7 +193,6 @@ class _MemberLedgerScreenState extends ConsumerState<MemberLedgerScreen> {
         ),
         body: Column(
           children: [
-            // DATE FILTER BAR
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               color: Colors.white,
@@ -227,7 +222,6 @@ class _MemberLedgerScreenState extends ConsumerState<MemberLedgerScreen> {
               ),
             ),
             
-            // TABS CONTENT
             Expanded(
               child: TabBarView(
                 children: [
@@ -240,15 +234,26 @@ class _MemberLedgerScreenState extends ConsumerState<MemberLedgerScreen> {
                       return ListView.builder(
                         padding: const EdgeInsets.all(16),
                         itemCount: filtered.length,
-                        itemBuilder: (ctx, i) => Card(
-                          margin: const EdgeInsets.only(bottom: 12),
-                          child: ListTile(
-                            leading: const CircleAvatar(backgroundColor: Colors.green, child: Icon(Icons.add, color: Colors.white)),
-                            title: const Text('Deposit', style: TextStyle(fontWeight: FontWeight.bold)),
-                            subtitle: Text(filtered[i].date.toString().split(' ')[0]),
-                            trailing: Text('৳${filtered[i].amount.toStringAsFixed(0)}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.green)),
-                          ),
-                        ),
+                        itemBuilder: (ctx, i) {
+                          final payment = filtered[i];
+                          return Card(
+                            margin: const EdgeInsets.only(bottom: 12),
+                            child: ListTile(
+                              leading: const CircleAvatar(backgroundColor: Colors.green, child: Icon(Icons.add, color: Colors.white)),
+                              title: const Text('Deposit', style: TextStyle(fontWeight: FontWeight.bold)),
+                              subtitle: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text('${payment.date.toString().split(' ')[0]} • Logged by ${payment.addedByName}'),
+                                  if (payment.note != null && payment.note!.isNotEmpty)
+                                    Text('Note: ${payment.note}', style: const TextStyle(color: Colors.orange, fontStyle: FontStyle.italic)),
+                                ],
+                              ),
+                              trailing: Text('৳${payment.amount.toStringAsFixed(0)}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.green)),
+                              isThreeLine: payment.note != null && payment.note!.isNotEmpty,
+                            ),
+                          );
+                        },
                       );
                     },
                     loading: () => const Center(child: CircularProgressIndicator()),
@@ -265,13 +270,23 @@ class _MemberLedgerScreenState extends ConsumerState<MemberLedgerScreen> {
                         padding: const EdgeInsets.all(16),
                         itemCount: filtered.length,
                         itemBuilder: (ctx, i) {
-                          final count = filtered[i].memberMeals[widget.member.uid]!;
+                          final meal = filtered[i];
+                          final count = meal.memberMeals[widget.member.uid]!;
                           return Card(
                             margin: const EdgeInsets.only(bottom: 12),
                             child: ListTile(
                               leading: CircleAvatar(backgroundColor: Colors.orange.withOpacity(0.2), child: const Icon(Icons.restaurant, color: Colors.orange)),
                               title: Text('${count.toStringAsFixed(1)} Meals Logged', style: const TextStyle(fontWeight: FontWeight.bold)),
-                              trailing: Text(filtered[i].date.toString().split(' ')[0], style: const TextStyle(color: Colors.grey)),
+                              subtitle: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text('Logged by ${meal.addedByName}'),
+                                  if (meal.note != null && meal.note!.isNotEmpty)
+                                    Text('Note: ${meal.note}', style: const TextStyle(color: Colors.orange, fontStyle: FontStyle.italic)),
+                                ],
+                              ),
+                              trailing: Text(meal.date.toString().split(' ')[0], style: const TextStyle(color: Colors.grey)),
+                              isThreeLine: meal.note != null && meal.note!.isNotEmpty,
                             ),
                           );
                         },
@@ -290,15 +305,26 @@ class _MemberLedgerScreenState extends ConsumerState<MemberLedgerScreen> {
                       return ListView.builder(
                         padding: const EdgeInsets.all(16),
                         itemCount: filtered.length,
-                        itemBuilder: (ctx, i) => Card(
-                          margin: const EdgeInsets.only(bottom: 12),
-                          child: ListTile(
-                            leading: CircleAvatar(backgroundColor: Colors.teal.withOpacity(0.2), child: const Icon(Icons.shopping_basket, color: Colors.teal)),
-                            title: Text(filtered[i].description, style: const TextStyle(fontWeight: FontWeight.bold)),
-                            subtitle: Text('${filtered[i].type} • ${filtered[i].date.toString().split(' ')[0]}'),
-                            trailing: Text('৳${filtered[i].amount.toStringAsFixed(0)}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.teal)),
-                          ),
-                        ),
+                        itemBuilder: (ctx, i) {
+                          final expense = filtered[i];
+                          return Card(
+                            margin: const EdgeInsets.only(bottom: 12),
+                            child: ListTile(
+                              leading: CircleAvatar(backgroundColor: Colors.teal.withOpacity(0.2), child: const Icon(Icons.shopping_basket, color: Colors.teal)),
+                              title: Text(expense.description, style: const TextStyle(fontWeight: FontWeight.bold)),
+                              subtitle: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text('${expense.type} • ${expense.date.toString().split(' ')[0]}'),
+                                  if (expense.note != null && expense.note!.isNotEmpty)
+                                    Text('Note: ${expense.note}', style: const TextStyle(color: Colors.orange, fontStyle: FontStyle.italic)),
+                                ],
+                              ),
+                              trailing: Text('৳${expense.amount.toStringAsFixed(0)}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.teal)),
+                              isThreeLine: expense.note != null && expense.note!.isNotEmpty,
+                            ),
+                          );
+                        },
                       );
                     },
                     loading: () => const Center(child: CircularProgressIndicator()),
