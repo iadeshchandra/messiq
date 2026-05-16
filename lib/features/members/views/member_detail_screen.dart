@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../auth/models/user_model.dart';
+import 'member_ledger_screen.dart'; // NEW IMPORT
 
 class MemberDetailScreen extends StatefulWidget {
   final UserModel member;
@@ -22,7 +23,6 @@ class MemberDetailScreen extends StatefulWidget {
 class _MemberDetailScreenState extends State<MemberDetailScreen> {
   bool _isLoading = false;
 
-  // Handles Kicking a Member
   void _kickMember(BuildContext context) async {
     final confirm = await showDialog<bool>(
       context: context,
@@ -55,7 +55,6 @@ class _MemberDetailScreenState extends State<MemberDetailScreen> {
     }
   }
 
-  // Handles Promoting/Demoting a Member
   void _changeRole(String currentRole) async {
     final newRole = currentRole == 'manager' ? 'member' : 'manager';
     final actionText = newRole == 'manager' ? 'Promote to Manager' : 'Demote to Member';
@@ -93,7 +92,6 @@ class _MemberDetailScreenState extends State<MemberDetailScreen> {
     }
   }
 
-  // NEW: The Manager Nudge Engine
   void _sendProfileReminder() async {
     setState(() => _isLoading = true);
     try {
@@ -101,7 +99,7 @@ class _MemberDetailScreenState extends State<MemberDetailScreen> {
       await notifRef.set({
         'title': '⚠️ Action Required: Update Profile',
         'body': 'Your Mess Manager has requested that you complete your profile. Your Phone Number and ICE (Emergency) details are strictly required for security and emergencies. Please tap "Profile" to update them immediately.',
-        'targetUid': widget.member.uid, // Sends ONLY to this specific user
+        'targetUid': widget.member.uid,
         'createdAt': Timestamp.now(),
         'readBy': [],
       });
@@ -176,11 +174,10 @@ class _MemberDetailScreenState extends State<MemberDetailScreen> {
           
           final currentRole = memberRoleData['role'] ?? 'member';
           
-          // Format the join date securely
           String joinedDateString = 'Unknown';
           if (memberRoleData['joinedAt'] != null) {
             DateTime joinedDate = (memberRoleData['joinedAt'] as Timestamp).toDate();
-            joinedDateString = joinedDate.toString().split(' ')[0]; // Gets YYYY-MM-DD
+            joinedDateString = joinedDate.toString().split(' ')[0]; 
           }
 
           bool isIncomplete = widget.member.icePhone == null || widget.member.icePhone!.isEmpty || widget.member.bloodGroup == null || widget.member.bloodGroup!.isEmpty;
@@ -217,6 +214,24 @@ class _MemberDetailScreenState extends State<MemberDetailScreen> {
                 ),
                 const SizedBox(height: 32),
 
+                // NEW: UNIVERSAL LEDGER BUTTON
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => MemberLedgerScreen(member: widget.member, messId: widget.messId))),
+                    icon: const Icon(Icons.history_rounded),
+                    label: const Text('View Activity Ledger'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: AppTheme.primaryIndigo,
+                      side: const BorderSide(color: AppTheme.primaryIndigo),
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
@@ -243,7 +258,6 @@ class _MemberDetailScreenState extends State<MemberDetailScreen> {
                 ),
                 const SizedBox(height: 24),
                 
-                // NEW: Manager Nudge Feature
                 if (widget.isManager && isIncomplete) ...[
                   Container(
                     width: double.infinity,
