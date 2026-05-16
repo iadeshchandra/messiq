@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../dashboard/controllers/dashboard_providers.dart';
 import '../controllers/finance_provider.dart';
+import '../../dashboard/controllers/dashboard_providers.dart';
 
 class AddMealScreen extends ConsumerStatefulWidget {
   final String messId;
@@ -13,78 +13,136 @@ class AddMealScreen extends ConsumerStatefulWidget {
 }
 
 class _AddMealScreenState extends ConsumerState<AddMealScreen> {
-  DateTime _selectedDate = DateTime.now();
-  Map<String, double> _mealCounts = {};
+  final Map<String, double> _memberMeals = {};
+  final _noteCtrl = TextEditingController(); // NEW: The Note Controller
+  DateTime _date = DateTime.now();
+  bool _isLoading = false;
 
-  Future<void> _submit() async {
-    try {
-      await ref.read(financeControllerProvider.notifier).addDailyMeals(widget.messId, _selectedDate, _mealCounts);
-      if (mounted) Navigator.pop(context);
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
-    }
+  @override
+  void dispose() {
+    _noteCtrl.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final membersAsync = ref.watch(messMembersDirectoryProvider(widget.messId));
-    final isLoading = ref.watch(financeControllerProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Log Daily Meals')),
+      backgroundColor: AppTheme.backgroundLight,
+      appBar: AppBar(title: const Text('Log Daily Meals', style: TextStyle(fontWeight: FontWeight.bold)), backgroundColor: AppTheme.backgroundLight, elevation: 0),
       body: membersAsync.when(
         data: (members) {
           if (members.isEmpty) return const Center(child: Text('No members found.'));
-          
+
+          // Initialize default meal counts to 0 if not set
+          for (var m in members) {
+            _memberMeals.putIfAbsent(m.uid, () => 0.0);
+          }
+
           return Column(
             children: [
               Expanded(
-                child: ListView.builder(
+                child: ListView(
                   padding: const EdgeInsets.all(24),
-                  itemCount: members.length,
-                  itemBuilder: (context, index) {
-                    final member = members[index];
-                    final currentCount = _mealCounts[member.uid] ?? 0.0;
+                  children: [
+                    const Text('Meal Date', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
+                    const SizedBox(height: 8),
+                    ListTile(
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      tileColor: Colors.white,
+                      leading: const Icon(Icons.calendar_today, color: AppTheme.primaryIndigo),
+                      title: Text(_date.toString().split(' ')[0]),
+                      onTap: () async {
+                        final picked = await showDatePicker(context: context, initialDate: _date, firstDate: DateTime(2020), lastDate: DateTime.now());
+                        if (picked != null) setState(() => _date = picked);
+                      },
+                    ),
+                    const SizedBox(height: 20),
 
-                    return Container(
-                      margin: const EdgeInsets.only(bottom: 16),
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
-                      child: Row(
-                        children: [
-                          CircleAvatar(backgroundColor: AppTheme.primaryIndigo.withOpacity(0.1), child: Text(member.name[0])),
-                          const SizedBox(width: 16),
-                          Expanded(child: Text(member.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16))),
-                          Row(
+                    // NEW: ACCOUNTABILITY NOTE UI
+                    const Text('Manager Note (Optional)', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: _noteCtrl,
+                      textCapitalization: TextCapitalization.sentences,
+                      decoration: InputDecoration(
+                        hintText: 'e.g., Friday special, included guest for Adesh', 
+                        filled: true, 
+                        fillColor: Colors.white, 
+                        prefixIcon: const Icon(Icons.edit_note_rounded, color: Colors.orange), 
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none)
+                      ),
+                    ),
+                    const SizedBox(height: 32),
+
+                    const Text('Member Meal Counts', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
+                    const SizedBox(height: 8),
+                    ...members.map((m) {
+                      return Card(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          child: Row(
                             children: [
-                              IconButton(
-                                icon: const Icon(Icons.remove_circle_outline_rounded, color: Colors.red),
-                                onPressed: currentCount > 0 ? () => setState(() => _mealCounts[member.uid] = currentCount - 0.5) : null,
-                              ),
-                              Text(currentCount.toString(), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-                              IconButton(
-                                icon: const Icon(Icons.add_circle_outline_rounded, color: Colors.teal),
-                                onPressed: () => setState(() => _mealCounts[member.uid] = currentCount + 0.5),
+                              CircleAvatar(backgroundColor: AppTheme.primaryIndigo.withOpacity(0.1), child: Text(m.name[0].toUpperCase(), style: const TextStyle(color: AppTheme.primaryIndigo, fontWeight: FontWeight.bold))),
+                              const SizedBox(width: 16),
+                              Expanded(child: Text(m.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16))),
+                              Row(
+                                children: [
+                                  IconButton(
+                                    icon: const Icon(Icons.remove_circle_outline, color: Colors.redAccent),
+                                    onPressed: () {
+                                      if (_memberMeals[m.uid]! >= 0.5) {
+                                        setState(() => _memberMeals[m.uid] = _memberMeals[m.uid]! - 0.5);
+                                      }
+                                    },
+                                  ),
+                                  Text(_memberMeals[m.uid]!.toStringAsFixed(1), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                                  IconButton(
+                                    icon: const Icon(Icons.add_circle_outline, color: Colors.green),
+                                    onPressed: () => setState(() => _memberMeals[m.uid] = _memberMeals[m.uid]! + 0.5),
+                                  ),
+                                ],
                               ),
                             ],
-                          )
-                        ],
-                      ),
-                    );
-                  },
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ],
                 ),
               ),
-              Padding(
+              Container(
                 padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(color: Colors.white, boxShadow: [BoxShadow(color: Colors.grey.withOpacity(0.1), blurRadius: 10, offset: const Offset(0, -5))]),
                 child: SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: isLoading ? null : _submit,
                     style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryIndigo, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 16), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
-                    child: isLoading ? const CircularProgressIndicator(color: Colors.white) : const Text('Save Meals', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                    onPressed: _isLoading ? null : () async {
+                      setState(() => _isLoading = true);
+                      try {
+                        await ref.read(financeControllerProvider).addMeal(
+                          widget.messId, 
+                          _date, 
+                          _memberMeals,
+                          note: _noteCtrl.text.trim().isEmpty ? null : _noteCtrl.text.trim(), // Sends the note
+                        );
+                        if (mounted) {
+                          Navigator.pop(context);
+                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Meals logged securely!'), backgroundColor: Colors.green));
+                        }
+                      } catch (e) {
+                        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red));
+                        setState(() => _isLoading = false);
+                      }
+                    },
+                    child: _isLoading ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) : const Text('Save All Meals', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                   ),
                 ),
-              )
+              ),
             ],
           );
         },
