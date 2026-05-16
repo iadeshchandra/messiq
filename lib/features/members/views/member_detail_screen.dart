@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../auth/models/user_model.dart';
-import '../../mess/models/mess_member_model.dart';
 
 class MemberDetailScreen extends StatefulWidget {
   final UserModel member;
@@ -44,8 +43,10 @@ class _MemberDetailScreenState extends State<MemberDetailScreen> {
     if (confirm == true && mounted) {
       setState(() => _isLoading = true);
       try {
-        await FirebaseFirestore.instance.collection('messes').doc(widget.messId).collection('members').doc(widget.member.uid).delete();
-        await FirebaseFirestore.instance.collection('users').doc(widget.member.uid).update({'activeMessId': FieldValue.delete()});
+        final batch = FirebaseFirestore.instance.batch();
+        batch.delete(FirebaseFirestore.instance.collection('messes').doc(widget.messId).collection('members').doc(widget.member.uid));
+        batch.set(FirebaseFirestore.instance.collection('users').doc(widget.member.uid), {'activeMessId': FieldValue.delete()}, SetOptions(merge: true));
+        await batch.commit();
         if (mounted) Navigator.pop(context);
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
@@ -92,10 +93,30 @@ class _MemberDetailScreenState extends State<MemberDetailScreen> {
     }
   }
 
-  // Generates the "Smart Overview" text based on profile completeness
+  // NEW: The Manager Nudge Engine
+  void _sendProfileReminder() async {
+    setState(() => _isLoading = true);
+    try {
+      final notifRef = FirebaseFirestore.instance.collection('messes').doc(widget.messId).collection('notifications').doc();
+      await notifRef.set({
+        'title': '⚠️ Action Required: Update Profile',
+        'body': 'Your Mess Manager has requested that you complete your profile. Your Phone Number and ICE (Emergency) details are strictly required for security and emergencies. Please tap "Profile" to update them immediately.',
+        'targetUid': widget.member.uid, // Sends ONLY to this specific user
+        'createdAt': Timestamp.now(),
+        'readBy': [],
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Reminder sent successfully!'), backgroundColor: Colors.green));
+      }
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
   String _generateSmartOverview(String role) {
     List<String> insights = [];
-    
     insights.add("${widget.member.name.split(' ')[0]} is currently a ${role.toUpperCase()}.");
 
     bool hasAddress = widget.member.presentAddress != null && widget.member.presentAddress!.isNotEmpty;
@@ -146,7 +167,6 @@ class _MemberDetailScreenState extends State<MemberDetailScreen> {
         elevation: 0,
       ),
       body: StreamBuilder<DocumentSnapshot>(
-        // Listen to the member's specific role document in real-time
         stream: FirebaseFirestore.instance.collection('messes').doc(widget.messId).collection('members').doc(widget.member.uid).snapshots(),
         builder: (context, snapshot) {
           if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
@@ -155,34 +175,48 @@ class _MemberDetailScreenState extends State<MemberDetailScreen> {
           if (memberRoleData == null) return const Center(child: Text('Member data not found'));
           
           final currentRole = memberRoleData['role'] ?? 'member';
+          
+          // Format the join date securely
+          String joinedDateString = 'Unknown';
+          if (memberRoleData['joinedAt'] != null) {
+            DateTime joinedDate = (memberRoleData['joinedAt'] as Timestamp).toDate();
+            joinedDateString = joinedDate.toString().split(' ')[0]; // Gets YYYY-MM-DD
+          }
+
+          bool isIncomplete = widget.member.icePhone == null || widget.member.icePhone!.isEmpty || widget.member.bloodGroup == null || widget.member.bloodGroup!.isEmpty;
 
           return SingleChildScrollView(
             padding: const EdgeInsets.all(24),
             child: Column(
               children: [
-                // Avatar Header
                 CircleAvatar(
                   radius: 50,
                   backgroundColor: AppTheme.primaryIndigo.withOpacity(0.1),
-                  child: Text(widget.member.name[0].toUpperCase(), style: const TextStyle(fontSize: 40, color: AppTheme.primaryIndigo, fontWeight: FontWeight.bold)),
+                  child: Text(widget.member.name.isNotEmpty ? widget.member.name[0].toUpperCase() : '?', style: const TextStyle(fontSize: 40, color: AppTheme.primaryIndigo, fontWeight: FontWeight.bold)),
                 ),
                 const SizedBox(height: 16),
                 Text(widget.member.name, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppTheme.textDark)),
-                Container(
-                  margin: const EdgeInsets.only(top: 8),
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: currentRole == 'manager' ? Colors.orange.withOpacity(0.1) : Colors.teal.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    currentRole.toUpperCase(),
-                    style: TextStyle(color: currentRole == 'manager' ? Colors.orange : Colors.teal, fontWeight: FontWeight.bold, fontSize: 12),
-                  ),
+                Text(widget.member.email, style: const TextStyle(color: Colors.grey, fontSize: 14)),
+                const SizedBox(height: 12),
+                
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                      decoration: BoxDecoration(color: currentRole == 'manager' ? Colors.orange.withOpacity(0.1) : Colors.teal.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
+                      child: Text(currentRole.toUpperCase(), style: TextStyle(color: currentRole == 'manager' ? Colors.orange : Colors.teal, fontWeight: FontWeight.bold, fontSize: 12)),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                      decoration: BoxDecoration(color: Colors.grey.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
+                      child: Text('Joined: $joinedDateString', style: const TextStyle(color: Colors.grey, fontWeight: FontWeight.bold, fontSize: 12)),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 32),
 
-                // THE SMART OVERVIEW CARD
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
@@ -203,16 +237,34 @@ class _MemberDetailScreenState extends State<MemberDetailScreen> {
                         ],
                       ),
                       const SizedBox(height: 12),
-                      Text(
-                        _generateSmartOverview(currentRole),
-                        style: const TextStyle(color: Colors.white, height: 1.5, fontSize: 14),
-                      ),
+                      Text(_generateSmartOverview(currentRole), style: const TextStyle(color: Colors.white, height: 1.5, fontSize: 14)),
                     ],
                   ),
                 ),
                 const SizedBox(height: 24),
                 
-                // Contact Details
+                // NEW: Manager Nudge Feature
+                if (widget.isManager && isIncomplete) ...[
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(color: Colors.orange.withOpacity(0.1), borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.orange.withOpacity(0.3))),
+                    child: Column(
+                      children: [
+                        const Text('Profile is missing critical emergency data.', style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold), textAlign: TextAlign.center),
+                        const SizedBox(height: 12),
+                        ElevatedButton.icon(
+                          onPressed: _isLoading ? null : _sendProfileReminder,
+                          icon: const Icon(Icons.notifications_active_rounded, size: 18),
+                          label: const Text('Send Reminder Alert'),
+                          style: ElevatedButton.styleFrom(backgroundColor: Colors.orange, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                        )
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                ],
+
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20)),
@@ -230,7 +282,6 @@ class _MemberDetailScreenState extends State<MemberDetailScreen> {
                 ),
                 const SizedBox(height: 16),
                 
-                // ICE Vault Details
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20)),
@@ -252,13 +303,11 @@ class _MemberDetailScreenState extends State<MemberDetailScreen> {
                   ),
                 ),
                 
-                // MANAGER TOOLS
                 if (widget.isManager) ...[
                   const SizedBox(height: 32),
                   const Align(alignment: Alignment.centerLeft, child: Text('Manager Actions', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey))),
                   const SizedBox(height: 16),
                   
-                  // Role Promotion/Demotion Button
                   SizedBox(
                     width: double.infinity,
                     child: OutlinedButton.icon(
@@ -275,7 +324,6 @@ class _MemberDetailScreenState extends State<MemberDetailScreen> {
                   ),
                   const SizedBox(height: 12),
                   
-                  // Kick Button
                   SizedBox(
                     width: double.infinity,
                     child: OutlinedButton.icon(
