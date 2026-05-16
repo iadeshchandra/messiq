@@ -16,9 +16,12 @@ dependencies:
   
   flutter_riverpod: ^2.4.9
   google_fonts: ^6.1.0
-  
-  # NEW: Added for QR Code Scanning
   mobile_scanner: ^4.0.0
+  
+  # NEW: Smart PDF Generation & Sharing Engine
+  pdf: ^3.10.8
+  path_provider: ^2.1.2
+  share_plus: ^7.2.1
 
 dev_dependencies:
   flutter_test:
