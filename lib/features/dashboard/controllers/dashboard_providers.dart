@@ -22,11 +22,13 @@ final currentMemberRoleProvider = StreamProvider.family<MessMemberModel?, String
   });
 });
 
-// NEW: Fetches all users who belong to this specific mess for the Directory
 final messMembersDirectoryProvider = StreamProvider.family<List<UserModel>, String>((ref, messId) {
-  return FirebaseFirestore.instance
-      .collection('users')
-      .where('activeMessId', isEqualTo: messId)
-      .snapshots()
+  return FirebaseFirestore.instance.collection('users').where('activeMessId', isEqualTo: messId).snapshots()
       .map((snapshot) => snapshot.docs.map((doc) => UserModel.fromMap(doc.data())).toList());
+});
+
+// NEW: Fetches the raw member documents so we can check who is 'pending' and who is 'approved'
+final messMemberStatusDocsProvider = StreamProvider.family<List<Map<String, dynamic>>, String>((ref, messId) {
+  return FirebaseFirestore.instance.collection('messes').doc(messId).collection('members').snapshots()
+      .map((snapshot) => snapshot.docs.map((doc) => doc.data()).toList());
 });
