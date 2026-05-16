@@ -5,6 +5,8 @@ import '../controllers/dashboard_providers.dart';
 import '../../finance/controllers/finance_provider.dart';
 import '../../finance/views/add_expense_screen.dart';
 import '../../finance/views/add_meal_screen.dart';
+import '../../finance/views/add_payment_screen.dart';
+import '../../finance/views/hisab_sheet_screen.dart';
 
 class DashboardHomeView extends ConsumerWidget {
   final String messId;
@@ -55,7 +57,7 @@ class DashboardHomeView extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // The Live Meal Rate Hero Card
+            // Hero Card
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(gradient: LinearGradient(colors: [AppTheme.primaryIndigo.withOpacity(0.8), AppTheme.primaryIndigo]), borderRadius: BorderRadius.circular(24), boxShadow: [BoxShadow(color: AppTheme.primaryIndigo.withOpacity(0.3), blurRadius: 20, offset: const Offset(0, 10))]),
@@ -69,7 +71,7 @@ class DashboardHomeView extends ConsumerWidget {
             ),
             const SizedBox(height: 16),
             
-            // Bento Grid for Stats
+            // Stats Grid
             Row(
               children: [
                 Expanded(child: _buildStatCard('Total Bazaar', '৳${hisabSummary['totalBazaar'].toStringAsFixed(0)}', Icons.shopping_basket_rounded, Colors.teal)),
@@ -79,43 +81,56 @@ class DashboardHomeView extends ConsumerWidget {
             ),
             const SizedBox(height: 32),
 
-            // Manager Controls
+            // UNIVERSAL ACCESS: View Hisab
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => HisabSheetScreen(messId: messId))),
+                icon: const Icon(Icons.analytics_rounded),
+                label: const Text('View Full Hisab Sheet'),
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.white, foregroundColor: AppTheme.primaryIndigo, side: const BorderSide(color: AppTheme.primaryIndigo), padding: const EdgeInsets.symmetric(vertical: 16), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
+              ),
+            ),
+            const SizedBox(height: 32),
+
+            // MANAGER ONLY TOOLS
             if (isManager) ...[
               const Text('Manager Controls', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: AppTheme.textDark)),
               const SizedBox(height: 16),
+              
+              // Row 1: Bazaar & Meals
               Row(
                 children: [
                   Expanded(
                     child: ElevatedButton.icon(
                       onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => AddExpenseScreen(messId: messId))),
-                      icon: const Icon(Icons.add_shopping_cart_rounded),
-                      label: const Text('Add Hisab'),
+                      icon: const Icon(Icons.add_shopping_cart_rounded, size: 18),
+                      label: const Text('Hisab'),
                       style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryIndigo, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 16), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
                     ),
                   ),
-                  const SizedBox(width: 16),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: ElevatedButton.icon(
                       onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => AddMealScreen(messId: messId))),
-                      icon: const Icon(Icons.restaurant_menu_rounded),
-                      label: const Text('Add Meals'),
+                      icon: const Icon(Icons.restaurant_menu_rounded, size: 18),
+                      label: const Text('Meals'),
                       style: ElevatedButton.styleFrom(backgroundColor: Colors.teal, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 16), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
                     ),
                   ),
                 ],
               ),
-            ] else ...[
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(color: Colors.orange.withOpacity(0.1), borderRadius: BorderRadius.circular(16)),
-                child: const Row(
-                  children: [
-                    Icon(Icons.info_outline_rounded, color: Colors.orange),
-                    SizedBox(width: 12),
-                    Expanded(child: Text('Only the Manager can add expenses and meals. You can view all live updates here.', style: TextStyle(color: Colors.orange))),
-                  ],
+              const SizedBox(height: 12),
+              // Row 2: Deposits
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => AddPaymentScreen(messId: messId))),
+                  icon: const Icon(Icons.payments_rounded),
+                  label: const Text('Log Member Deposit'),
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.orange, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 16), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
                 ),
-              )
+              ),
             ],
           ],
         ),
