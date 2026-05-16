@@ -1,363 +1,212 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../auth/models/user_model.dart';
-import 'member_ledger_screen.dart'; // NEW IMPORT
+import '../../dashboard/controllers/dashboard_providers.dart';
+import 'member_detail_screen.dart';
 
-class MemberDetailScreen extends StatefulWidget {
-  final UserModel member;
-  final bool isManager;
+class MessDirectoryScreen extends ConsumerStatefulWidget {
   final String messId;
-
-  const MemberDetailScreen({
-    super.key,
-    required this.member,
-    required this.isManager,
-    required this.messId,
-  });
+  const MessDirectoryScreen({super.key, required this.messId});
 
   @override
-  State<MemberDetailScreen> createState() => _MemberDetailScreenState();
+  ConsumerState<MessDirectoryScreen> createState() => _MessDirectoryScreenState();
 }
 
-class _MemberDetailScreenState extends State<MemberDetailScreen> {
-  bool _isLoading = false;
+class _MessDirectoryScreenState extends ConsumerState<MessDirectoryScreen> {
+  
+  void _showBroadcastSheet(BuildContext context) {
+    final titleCtrl = TextEditingController();
+    final bodyCtrl = TextEditingController();
+    bool isSubmitting = false;
 
-  void _kickMember(BuildContext context) async {
-    final confirm = await showDialog<bool>(
+    showModalBottomSheet(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Remove Member?'),
-        content: Text('Are you sure you want to completely remove ${widget.member.name} from the mess?'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Remove', style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
-    );
-
-    if (confirm == true && mounted) {
-      setState(() => _isLoading = true);
-      try {
-        final batch = FirebaseFirestore.instance.batch();
-        batch.delete(FirebaseFirestore.instance.collection('messes').doc(widget.messId).collection('members').doc(widget.member.uid));
-        batch.set(FirebaseFirestore.instance.collection('users').doc(widget.member.uid), {'activeMessId': FieldValue.delete()}, SetOptions(merge: true));
-        await batch.commit();
-        if (mounted) Navigator.pop(context);
-      } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
-        setState(() => _isLoading = false);
-      }
-    }
-  }
-
-  void _changeRole(String currentRole) async {
-    final newRole = currentRole == 'manager' ? 'member' : 'manager';
-    final actionText = newRole == 'manager' ? 'Promote to Manager' : 'Demote to Member';
-
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text('$actionText?'),
-        content: Text('Do you want to change ${widget.member.name}\'s role to ${newRole.toUpperCase()}?'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryIndigo),
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Confirm', style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
-    );
-
-    if (confirm == true && mounted) {
-      setState(() => _isLoading = true);
-      try {
-        await FirebaseFirestore.instance
-            .collection('messes')
-            .doc(widget.messId)
-            .collection('members')
-            .doc(widget.member.uid)
-            .update({'role': newRole});
-      } catch (e) {
-        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
-      } finally {
-        if (mounted) setState(() => _isLoading = false);
-      }
-    }
-  }
-
-  void _sendProfileReminder() async {
-    setState(() => _isLoading = true);
-    try {
-      final notifRef = FirebaseFirestore.instance.collection('messes').doc(widget.messId).collection('notifications').doc();
-      await notifRef.set({
-        'title': '⚠️ Action Required: Update Profile',
-        'body': 'Your Mess Manager has requested that you complete your profile. Your Phone Number and ICE (Emergency) details are strictly required for security and emergencies. Please tap "Profile" to update them immediately.',
-        'targetUid': widget.member.uid,
-        'createdAt': Timestamp.now(),
-        'readBy': [],
-      });
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Reminder sent successfully!'), backgroundColor: Colors.green));
-      }
-    } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
-  }
-
-  String _generateSmartOverview(String role) {
-    List<String> insights = [];
-    insights.add("${widget.member.name.split(' ')[0]} is currently a ${role.toUpperCase()}.");
-
-    bool hasAddress = widget.member.presentAddress != null && widget.member.presentAddress!.isNotEmpty;
-    bool hasIce = widget.member.icePhone != null && widget.member.icePhone!.isNotEmpty;
-    bool hasBlood = widget.member.bloodGroup != null && widget.member.bloodGroup!.isNotEmpty;
-
-    if (hasAddress && hasIce && hasBlood) {
-      insights.add("Their profile is 100% verified. ICE Vault is fully secured and ready for any emergency.");
-    } else {
-      insights.add("Their profile is incomplete.");
-      if (!hasIce) insights.add("They have no emergency contact listed.");
-      if (!hasBlood) insights.add("Blood group is missing.");
-    }
-
-    return insights.join(' ');
-  }
-
-  Widget _buildInfoRow(IconData icon, String label, String? value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16.0),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, color: AppTheme.primaryIndigo, size: 24),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(label, style: const TextStyle(color: Colors.grey, fontSize: 12)),
-                const SizedBox(height: 4),
-                Text(value != null && value.isNotEmpty ? value : 'Not provided', style: const TextStyle(fontSize: 16, color: AppTheme.textDark)),
-              ],
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheetState) {
+          return Container(
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.of(ctx).viewInsets.bottom,
+              left: 24,
+              right: 24,
+              top: 24,
             ),
-          ),
-        ],
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+            ),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2)))),
+                  const SizedBox(height: 24),
+                  const Text('Broadcast Announcement', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppTheme.textDark)),
+                  const SizedBox(height: 8),
+                  const Text('Send an instant push notification to every member of the mess.', style: TextStyle(color: Colors.grey)),
+                  const SizedBox(height: 24),
+                  TextField(
+                    controller: titleCtrl,
+                    textCapitalization: TextCapitalization.sentences,
+                    decoration: InputDecoration(
+                      labelText: 'Announcement Title',
+                      hintText: 'e.g., Urgent: Mess Meeting Tonight',
+                      filled: true,
+                      fillColor: AppTheme.backgroundLight,
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: bodyCtrl,
+                    maxLines: 4,
+                    textCapitalization: TextCapitalization.sentences,
+                    decoration: InputDecoration(
+                      labelText: 'Message details...',
+                      filled: true,
+                      fillColor: AppTheme.backgroundLight,
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.primaryIndigo,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      ),
+                      onPressed: isSubmitting ? null : () async {
+                        if (titleCtrl.text.isNotEmpty && bodyCtrl.text.isNotEmpty) {
+                          setSheetState(() => isSubmitting = true);
+                          try {
+                            await FirebaseFirestore.instance
+                                .collection('messes')
+                                .doc(widget.messId)
+                                .collection('notifications')
+                                .doc()
+                                .set({
+                              'title': '📢 ${titleCtrl.text.trim()}',
+                              'body': bodyCtrl.text.trim(),
+                              'targetUid': null, // Null means it goes to everyone
+                              'targetRole': null,
+                              'targetRoute': null, // Just a general alert
+                              'createdAt': Timestamp.now(),
+                              'readBy': [], // Empty so everyone gets the unread badge
+                            });
+                            if (ctx.mounted) {
+                              Navigator.pop(ctx);
+                              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Broadcast sent successfully!'), backgroundColor: Colors.green));
+                            }
+                          } catch (e) {
+                            setSheetState(() => isSubmitting = false);
+                            if (ctx.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red));
+                          }
+                        }
+                      },
+                      icon: isSubmitting ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) : const Icon(Icons.campaign_rounded),
+                      label: Text(isSubmitting ? 'Sending...' : 'Send to Everyone', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                ],
+              ),
+            ),
+          );
+        },
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final membersAsync = ref.watch(messMembersDirectoryProvider(widget.messId));
+    final memberStatusesAsync = ref.watch(messMemberStatusDocsProvider(widget.messId));
+    final currentRoleAsync = ref.watch(currentMemberRoleProvider(widget.messId));
+
+    final isManager = currentRoleAsync.value?.role == 'manager';
+
     return Scaffold(
       backgroundColor: AppTheme.backgroundLight,
       appBar: AppBar(
-        title: const Text('Member Profile', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text('Mess Directory', style: TextStyle(fontWeight: FontWeight.bold)),
         backgroundColor: AppTheme.backgroundLight,
         elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.qr_code_rounded, color: AppTheme.primaryIndigo),
+            onPressed: () {
+              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('QR Invite Code feature coming soon!')));
+            },
+          )
+        ],
       ),
-      body: StreamBuilder<DocumentSnapshot>(
-        stream: FirebaseFirestore.instance.collection('messes').doc(widget.messId).collection('members').doc(widget.member.uid).snapshots(),
-        builder: (context, snapshot) {
-          if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
-          
-          final memberRoleData = snapshot.data!.data() as Map<String, dynamic>?;
-          if (memberRoleData == null) return const Center(child: Text('Member data not found'));
-          
-          final currentRole = memberRoleData['role'] ?? 'member';
-          
-          String joinedDateString = 'Unknown';
-          if (memberRoleData['joinedAt'] != null) {
-            DateTime joinedDate = (memberRoleData['joinedAt'] as Timestamp).toDate();
-            joinedDateString = joinedDate.toString().split(' ')[0]; 
-          }
+      // THE NEW BROADCAST BUTTON
+      floatingActionButton: isManager ? FloatingActionButton.extended(
+        backgroundColor: AppTheme.primaryIndigo,
+        onPressed: () => _showBroadcastSheet(context),
+        icon: const Icon(Icons.campaign_rounded, color: Colors.white),
+        label: const Text('Broadcast', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+      ) : null,
+      body: membersAsync.when(
+        data: (members) {
+          return memberStatusesAsync.when(
+            data: (statuses) {
+              if (members.isEmpty) {
+                return const Center(child: Text('No active members found.'));
+              }
 
-          bool isIncomplete = widget.member.icePhone == null || widget.member.icePhone!.isEmpty || widget.member.bloodGroup == null || widget.member.bloodGroup!.isEmpty;
-
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              children: [
-                CircleAvatar(
-                  radius: 50,
-                  backgroundColor: AppTheme.primaryIndigo.withOpacity(0.1),
-                  child: Text(widget.member.name.isNotEmpty ? widget.member.name[0].toUpperCase() : '?', style: const TextStyle(fontSize: 40, color: AppTheme.primaryIndigo, fontWeight: FontWeight.bold)),
-                ),
-                const SizedBox(height: 16),
-                Text(widget.member.name, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppTheme.textDark)),
-                Text(widget.member.email, style: const TextStyle(color: Colors.grey, fontSize: 14)),
-                const SizedBox(height: 12),
-                
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                      decoration: BoxDecoration(color: currentRole == 'manager' ? Colors.orange.withOpacity(0.1) : Colors.teal.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
-                      child: Text(currentRole.toUpperCase(), style: TextStyle(color: currentRole == 'manager' ? Colors.orange : Colors.teal, fontWeight: FontWeight.bold, fontSize: 12)),
-                    ),
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                      decoration: BoxDecoration(color: Colors.grey.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
-                      child: Text('Joined: $joinedDateString', style: const TextStyle(color: Colors.grey, fontWeight: FontWeight.bold, fontSize: 12)),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 32),
-
-                // NEW: UNIVERSAL LEDGER BUTTON
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => MemberLedgerScreen(member: widget.member, messId: widget.messId))),
-                    icon: const Icon(Icons.history_rounded),
-                    label: const Text('View Activity Ledger'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      foregroundColor: AppTheme.primaryIndigo,
-                      side: const BorderSide(color: AppTheme.primaryIndigo),
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 24),
-
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(colors: [AppTheme.primaryIndigo.withOpacity(0.8), AppTheme.primaryIndigo]),
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [BoxShadow(color: AppTheme.primaryIndigo.withOpacity(0.3), blurRadius: 15, offset: const Offset(0, 8))],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          const Icon(Icons.auto_awesome_rounded, color: Colors.amberAccent),
-                          const SizedBox(width: 8),
-                          const Text('Smart Overview', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
-                          const Spacer(),
-                          if (_isLoading) const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      Text(_generateSmartOverview(currentRole), style: const TextStyle(color: Colors.white, height: 1.5, fontSize: 14)),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 24),
-                
-                if (widget.isManager && isIncomplete) ...[
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(color: Colors.orange.withOpacity(0.1), borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.orange.withOpacity(0.3))),
-                    child: Column(
-                      children: [
-                        const Text('Profile is missing critical emergency data.', style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold), textAlign: TextAlign.center),
-                        const SizedBox(height: 12),
-                        ElevatedButton.icon(
-                          onPressed: _isLoading ? null : _sendProfileReminder,
-                          icon: const Icon(Icons.notifications_active_rounded, size: 18),
-                          label: const Text('Send Reminder Alert'),
-                          style: ElevatedButton.styleFrom(backgroundColor: Colors.orange, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
-                        )
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                ],
-
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20)),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text('Contact & Address', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.primaryIndigo)),
-                      const Divider(height: 32),
-                      _buildInfoRow(Icons.phone_rounded, 'Phone Number', widget.member.phone),
-                      _buildInfoRow(Icons.email_rounded, 'Email', widget.member.email),
-                      _buildInfoRow(Icons.location_on_rounded, 'Present Address', widget.member.presentAddress),
-                      _buildInfoRow(Icons.home_rounded, 'Permanent Address', widget.member.permanentAddress),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-                
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20)),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Row(
-                        children: [
-                          Icon(Icons.medical_services_rounded, color: Colors.red),
-                          SizedBox(width: 8),
-                          Text('ICE Vault (Emergency)', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.red)),
-                        ],
-                      ),
-                      const Divider(height: 32),
-                      _buildInfoRow(Icons.bloodtype_rounded, 'Blood Group', widget.member.bloodGroup),
-                      _buildInfoRow(Icons.person_outline_rounded, 'Emergency Contact Name', widget.member.iceName),
-                      _buildInfoRow(Icons.phone_in_talk_rounded, 'Emergency Contact Phone', widget.member.icePhone),
-                    ],
-                  ),
-                ),
-                
-                if (widget.isManager) ...[
-                  const SizedBox(height: 32),
-                  const Align(alignment: Alignment.centerLeft, child: Text('Manager Actions', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey))),
-                  const SizedBox(height: 16),
+              return ListView.builder(
+                padding: const EdgeInsets.all(16).copyWith(bottom: 100),
+                itemCount: members.length,
+                itemBuilder: (context, index) {
+                  final member = members[index];
                   
-                  SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton.icon(
-                      icon: Icon(currentRole == 'manager' ? Icons.arrow_downward_rounded : Icons.admin_panel_settings_rounded),
-                      label: Text(currentRole == 'manager' ? 'Demote to Member' : 'Promote to Manager'),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppTheme.primaryIndigo,
-                        side: const BorderSide(color: AppTheme.primaryIndigo),
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  // Match the member with their role status
+                  final statusDoc = statuses.firstWhere(
+                    (s) => s['uid'] == member.uid,
+                    orElse: () => {'role': 'member'},
+                  );
+                  final role = statusDoc['role']?.toString().toUpperCase() ?? 'MEMBER';
+
+                  return Card(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    child: ListTile(
+                      contentPadding: const EdgeInsets.all(12),
+                      leading: CircleAvatar(
+                        radius: 24,
+                        backgroundColor: AppTheme.primaryIndigo.withOpacity(0.1),
+                        child: Text(
+                          member.name.isNotEmpty ? member.name[0].toUpperCase() : '?',
+                          style: const TextStyle(color: AppTheme.primaryIndigo, fontWeight: FontWeight.bold, fontSize: 18),
+                        ),
                       ),
-                      onPressed: _isLoading ? null : () => _changeRole(currentRole),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  
-                  SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton.icon(
-                      icon: const Icon(Icons.person_remove_rounded),
-                      label: const Text('Remove from Mess'),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.red,
-                        side: const BorderSide(color: Colors.red),
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      title: Text(member.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                      subtitle: Padding(
+                        padding: const EdgeInsets.only(top: 4.0),
+                        child: Text(role, style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: role == 'MANAGER' ? Colors.orange : Colors.teal)),
                       ),
-                      onPressed: _isLoading ? null : () => _kickMember(context),
+                      trailing: const Icon(Icons.chevron_right_rounded, color: Colors.grey),
+                      onTap: () {
+                        Navigator.push(context, MaterialPageRoute(builder: (_) => MemberDetailScreen(member: member, isManager: isManager, messId: widget.messId)));
+                      },
                     ),
-                  ),
-                ],
-                const SizedBox(height: 40),
-              ],
-            ),
+                  );
+                },
+              );
+            },
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (e, _) => Center(child: Text('Error loading roles: $e')),
           );
         },
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (e, _) => Center(child: Text('Error loading directory: $e')),
       ),
     );
   }
