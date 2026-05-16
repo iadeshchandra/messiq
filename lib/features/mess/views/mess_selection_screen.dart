@@ -11,6 +11,7 @@ class MessSelectionScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
+      backgroundColor: AppTheme.backgroundLight,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24.0),
@@ -22,82 +23,85 @@ class MessSelectionScreen extends ConsumerWidget {
                 children: [
                   const Text('MessIQ', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppTheme.primaryIndigo)),
                   IconButton(
-                    icon: const Icon(Icons.logout),
+                    icon: const Icon(Icons.logout_rounded, color: Colors.grey),
                     onPressed: () => ref.read(authControllerProvider.notifier).logout(),
                   )
                 ],
               ),
               const Spacer(),
-              const Text(
-                'Let\'s get started',
-                style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
-              ),
+              const Text('Welcome Aboard! 🎉', style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: AppTheme.textDark)),
               const SizedBox(height: 8),
-              const Text('Create a new shared living space or join an existing one.', style: TextStyle(color: Colors.grey)),
+              const Text('You are not in a mess yet. Choose an option below to get started.', style: TextStyle(color: Colors.grey, fontSize: 16, height: 1.5)),
               const SizedBox(height: 40),
               
-              // Bento Grid Card 1
+              // Option 1: Create
               InkWell(
                 onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CreateMessScreen())),
+                borderRadius: BorderRadius.circular(24),
                 child: Container(
                   padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(24),
-                    boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))],
+                    border: Border.all(color: AppTheme.primaryIndigo.withOpacity(0.2)),
+                    boxShadow: [BoxShadow(color: AppTheme.primaryIndigo.withOpacity(0.05), blurRadius: 20, offset: const Offset(0, 10))],
                   ),
                   child: Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.all(12),
+                        padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(color: AppTheme.primaryIndigo.withOpacity(0.1), shape: BoxShape.circle),
                         child: const Icon(Icons.add_home_rounded, color: AppTheme.primaryIndigo, size: 32),
                       ),
-                      const SizedBox(width: 16),
+                      const SizedBox(width: 20),
                       const Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('Create new Mess', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                            Text('Start a New Mess', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.textDark)),
+                            SizedBox(height: 4),
                             Text('You will be the Manager', style: TextStyle(color: Colors.grey, fontSize: 14)),
                           ],
                         ),
                       ),
-                      const Icon(Icons.arrow_forward_ios, color: Colors.grey, size: 16),
+                      const Icon(Icons.arrow_forward_ios_rounded, color: AppTheme.primaryIndigo, size: 20),
                     ],
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
               
-              // Bento Grid Card 2
+              // Option 2: Join
               InkWell(
                 onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const JoinMessScreen())),
+                borderRadius: BorderRadius.circular(24),
                 child: Container(
                   padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(24),
-                    boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))],
+                    border: Border.all(color: Colors.teal.withOpacity(0.2)),
+                    boxShadow: [BoxShadow(color: Colors.teal.withOpacity(0.05), blurRadius: 20, offset: const Offset(0, 10))],
                   ),
                   child: Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(color: Colors.orange.withOpacity(0.1), shape: BoxShape.circle),
-                        child: const Icon(Icons.group_add_rounded, color: Colors.orange, size: 32),
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(color: Colors.teal.withOpacity(0.1), shape: BoxShape.circle),
+                        child: const Icon(Icons.group_add_rounded, color: Colors.teal, size: 32),
                       ),
-                      const SizedBox(width: 16),
+                      const SizedBox(width: 20),
                       const Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('Join existing Mess', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                            Text('Join your Friends', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.textDark)),
+                            SizedBox(height: 4),
                             Text('Using a 6-digit invite code', style: TextStyle(color: Colors.grey, fontSize: 14)),
                           ],
                         ),
                       ),
-                      const Icon(Icons.arrow_forward_ios, color: Colors.grey, size: 16),
+                      const Icon(Icons.arrow_forward_ios_rounded, color: Colors.teal, size: 20),
                     ],
                   ),
                 ),
