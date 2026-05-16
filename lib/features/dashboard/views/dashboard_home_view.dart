@@ -9,6 +9,7 @@ import '../../finance/views/add_payment_screen.dart';
 import '../../finance/views/hisab_sheet_screen.dart';
 import '../../notifications/controllers/notification_provider.dart';
 import '../../notifications/views/notifications_screen.dart';
+import '../../bazaar/views/bazaar_list_screen.dart'; // NEW IMPORT
 
 class DashboardHomeView extends ConsumerWidget {
   final String messId;
@@ -55,7 +56,6 @@ class DashboardHomeView extends ConsumerWidget {
           error: (_, __) => const SizedBox.shrink(),
         ),
         actions: [
-          // THE NOTIFICATION BELL & BADGE
           Padding(
             padding: const EdgeInsets.only(right: 8.0),
             child: IconButton(
@@ -95,17 +95,34 @@ class DashboardHomeView extends ConsumerWidget {
               ],
             ),
             const SizedBox(height: 32),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => HisabSheetScreen(messId: messId))),
-                icon: const Icon(Icons.analytics_rounded),
-                label: const Text('View Full Hisab Sheet'),
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.white, foregroundColor: AppTheme.primaryIndigo, side: const BorderSide(color: AppTheme.primaryIndigo), padding: const EdgeInsets.symmetric(vertical: 16), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
-              ),
+            
+            // UNIVERSAL ACCESS: Collaborative Tools
+            const Text('Workspace Tools', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: AppTheme.textDark)),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => HisabSheetScreen(messId: messId))),
+                    icon: const Icon(Icons.analytics_rounded),
+                    label: const Text('Hisab Sheet'),
+                    style: ElevatedButton.styleFrom(backgroundColor: Colors.white, foregroundColor: AppTheme.primaryIndigo, side: const BorderSide(color: AppTheme.primaryIndigo), padding: const EdgeInsets.symmetric(vertical: 16), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => BazaarListScreen(messId: messId))),
+                    icon: const Icon(Icons.checklist_rtl_rounded),
+                    label: const Text('Bazaar List'),
+                    style: ElevatedButton.styleFrom(backgroundColor: Colors.white, foregroundColor: Colors.teal, side: const BorderSide(color: Colors.teal), padding: const EdgeInsets.symmetric(vertical: 16), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 32),
 
+            // MANAGER ONLY TOOLS
             if (isManager) ...[
               const Text('Manager Controls', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: AppTheme.textDark)),
               const SizedBox(height: 16),
