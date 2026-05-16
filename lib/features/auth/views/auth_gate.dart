@@ -25,21 +25,22 @@ class AuthGate extends ConsumerWidget {
                 final memberRole = ref.watch(currentMemberRoleProvider(messId));
                 return memberRole.when(
                   data: (member) {
-                    // Route to waiting room if status is pending
-                    if (member?.status == 'pending') {
+                    // Fallback check: If the member doc is somehow null right after joining, show loading
+                    if (member == null) {
+                      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+                    }
+                    if (member.status == 'pending') {
                       return WaitingRoomScreen(messId: messId); 
                     }
-                    // Otherwise, route to the main dashboard
                     return DashboardScreen(messId: messId); 
                   },
                   loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
-                  // THE FIX: Actually print the error '$e' so we know exactly what went wrong
                   error: (e, __) => Scaffold(
                     body: Center(
                       child: Padding(
                         padding: const EdgeInsets.all(24.0),
                         child: Text(
-                          'Error loading status:\n$e', 
+                          'System Error:\n$e', 
                           textAlign: TextAlign.center, 
                           style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold)
                         ),
@@ -51,13 +52,13 @@ class AuthGate extends ConsumerWidget {
               return const MessSelectionScreen();
             },
             loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
-            error: (e, _) => Scaffold(body: Center(child: Text('Error loading workspace: $e'))),
+            error: (e, _) => Scaffold(body: Center(child: Text('Workspace Error: $e'))),
           );
         }
         return const WelcomeScreen();
       },
       loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
-      error: (e, trace) => Scaffold(body: Center(child: Text('Error: $e'))),
+      error: (e, trace) => Scaffold(body: Center(child: Text('Auth Error: $e'))),
     );
   }
 }
