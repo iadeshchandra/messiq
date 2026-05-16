@@ -17,6 +17,7 @@ class _PollsScreenState extends ConsumerState<PollsScreen> {
   void _showCreatePollSheet(BuildContext context, WidgetRef ref) {
     final questionCtrl = TextEditingController();
     final optionCtrls = [TextEditingController(), TextEditingController()];
+    DateTime? selectedDeadline;
 
     showModalBottomSheet(
       context: context,
@@ -46,6 +47,7 @@ class _PollsScreenState extends ConsumerState<PollsScreen> {
                   const SizedBox(height: 16),
                   TextField(
                     controller: questionCtrl,
+                    textCapitalization: TextCapitalization.sentences,
                     decoration: InputDecoration(
                       hintText: 'e.g., What should we eat for Friday lunch?',
                       filled: true,
@@ -54,6 +56,44 @@ class _PollsScreenState extends ConsumerState<PollsScreen> {
                     ),
                   ),
                   const SizedBox(height: 16),
+                  
+                  // NEW: Deadline Picker UI
+                  ListTile(
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    tileColor: AppTheme.backgroundLight,
+                    leading: const Icon(Icons.timer_outlined, color: AppTheme.primaryIndigo),
+                    title: const Text('Set Deadline (Optional)', style: TextStyle(fontWeight: FontWeight.bold)),
+                    subtitle: Text(
+                      selectedDeadline == null 
+                        ? 'No deadline (manual close)' 
+                        : 'Closes on ${selectedDeadline!.toString().substring(0, 16)}',
+                      style: TextStyle(color: selectedDeadline == null ? Colors.grey : AppTheme.textDark),
+                    ),
+                    trailing: selectedDeadline != null 
+                      ? IconButton(
+                          icon: const Icon(Icons.clear, color: Colors.redAccent),
+                          onPressed: () => setSheetState(() => selectedDeadline = null),
+                        )
+                      : null,
+                    onTap: () async {
+                      final date = await showDatePicker(
+                        context: ctx,
+                        initialDate: DateTime.now(),
+                        firstDate: DateTime.now(),
+                        lastDate: DateTime.now().add(const Duration(days: 30)),
+                      );
+                      if (date != null && ctx.mounted) {
+                        final time = await showTimePicker(context: ctx, initialTime: TimeOfDay.now());
+                        if (time != null) {
+                          setSheetState(() {
+                            selectedDeadline = DateTime(date.year, date.month, date.day, time.hour, time.minute);
+                          });
+                        }
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 16),
+
                   const Text('Options', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
                   const SizedBox(height: 8),
                   ...List.generate(optionCtrls.length, (index) {
@@ -102,7 +142,12 @@ class _PollsScreenState extends ConsumerState<PollsScreen> {
                       onPressed: () async {
                         if (questionCtrl.text.isNotEmpty && optionCtrls.every((c) => c.text.isNotEmpty)) {
                           final options = optionCtrls.map((c) => c.text).toList();
-                          await ref.read(pollControllerProvider).createPoll(widget.messId, questionCtrl.text, options);
+                          await ref.read(pollControllerProvider).createPoll(
+                            widget.messId, 
+                            questionCtrl.text, 
+                            options,
+                            expiresAt: selectedDeadline, // Passes the deadline to the backend
+                          );
                           if (ctx.mounted) Navigator.pop(ctx);
                         }
                       },
@@ -164,7 +209,24 @@ class _PollsScreenState extends ConsumerState<PollsScreen> {
               final totalVotes = poll.votes.length;
               final myVoteIndex = currentUser != null ? poll.votes[currentUser.uid] : null;
 
-              return Container(
+              // NEW: Auto-lock logic based on the deadline
+              final bool isExpired = poll.expiresAt != null && DateTime.now().isAfter(poll.expiresAt!);
+              final bool isActuallyActive = poll.isActive && !isExpired;
+
+              // NEW: Countdown text generator
+              String deadlineText = '';
+              if (poll.expiresAt != null) {
+                if (isExpired) {
+                  deadlineText = 'Time is up';
+                } else {
+                  final diff = poll.expiresAt!.difference(DateTime.now());
+                  if (diff.inDays > 0) deadlineText = 'Ends in ${diff.inDays}d ${diff.inHours % 24}h';
+                  else if (diff.inHours > 0) deadlineText = 'Ends in ${diff.inHours}h ${diff.inMinutes % 60}m';
+                  else deadlineText = 'Ends in ${diff.inMinutes}m';
+                }
+              }
+
+            return Container(
                 margin: const EdgeInsets.only(bottom: 16),
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
@@ -184,11 +246,21 @@ class _PollsScreenState extends ConsumerState<PollsScreen> {
                             children: [
                               Text(poll.question, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.textDark)),
                               const SizedBox(height: 4),
-                              Text('Asked by ${poll.addedByName} • $totalVotes votes', style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                              Row(
+                                children: [
+                                  Text('Asked by ${poll.addedByName} • $totalVotes votes', style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                                  if (poll.expiresAt != null) ...[
+                                    const Text(' • ', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                                    Icon(Icons.timer_outlined, size: 12, color: isExpired ? Colors.redAccent : Colors.orange),
+                                    const SizedBox(width: 2),
+                                    Text(deadlineText, style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: isExpired ? Colors.redAccent : Colors.orange)),
+                                  ]
+                                ],
+                              ),
                             ],
                           ),
                         ),
-                        if (!poll.isActive)
+                        if (!isActuallyActive)
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                             decoration: BoxDecoration(color: Colors.redAccent.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
@@ -198,14 +270,14 @@ class _PollsScreenState extends ConsumerState<PollsScreen> {
                           PopupMenuButton<String>(
                             icon: const Icon(Icons.more_vert, color: Colors.grey),
                             onSelected: (value) {
-                              if (value == 'close' && poll.isActive) {
+                              if (value == 'close' && isActuallyActive) {
                                 ref.read(pollControllerProvider).closePoll(widget.messId, poll.id);
                               } else if (value == 'delete') {
                                 ref.read(pollControllerProvider).deletePoll(widget.messId, poll.id);
                               }
                             },
                             itemBuilder: (BuildContext context) => [
-                              if (poll.isActive) const PopupMenuItem(value: 'close', child: Text('Close Poll')),
+                              if (isActuallyActive) const PopupMenuItem(value: 'close', child: Text('Close Poll')),
                               const PopupMenuItem(value: 'delete', child: Text('Delete Poll', style: TextStyle(color: Colors.red))),
                             ],
                           )
@@ -220,8 +292,11 @@ class _PollsScreenState extends ConsumerState<PollsScreen> {
 
                       return GestureDetector(
                         onTap: () {
-                          if (poll.isActive && currentUser != null) {
+                          // Voting only allowed if it hasn't expired and is manually active
+                          if (isActuallyActive && currentUser != null) {
                             ref.read(pollControllerProvider).voteOnPoll(widget.messId, poll.id, optIndex);
+                          } else if (!isActuallyActive) {
+                             ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Voting is closed for this poll.')));
                           }
                         },
                         child: Container(
@@ -233,7 +308,6 @@ class _PollsScreenState extends ConsumerState<PollsScreen> {
                           ),
                           child: Stack(
                             children: [
-                              // Progress Bar Background
                               FractionallySizedBox(
                                 widthFactor: percentage,
                                 child: Container(
@@ -241,7 +315,6 @@ class _PollsScreenState extends ConsumerState<PollsScreen> {
                                   color: isMyVote ? AppTheme.primaryIndigo.withOpacity(0.15) : Colors.grey.shade100,
                                 ),
                               ),
-                              // Text Content
                               Container(
                                 height: 48,
                                 padding: const EdgeInsets.symmetric(horizontal: 16),
