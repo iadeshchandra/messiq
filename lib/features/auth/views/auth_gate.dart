@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../mess/views/mess_selection_screen.dart';
+import '../../mess/views/waiting_room_screen.dart';
 import '../../mess/controllers/active_mess_provider.dart';
+import '../../dashboard/controllers/dashboard_providers.dart';
 import '../../dashboard/views/dashboard_screen.dart';
 import '../controllers/auth_controller.dart';
-import 'welcome_screen.dart'; // IMPORTANT: Now imports the Welcome Screen
+import 'welcome_screen.dart';
 
 class AuthGate extends ConsumerWidget {
   const AuthGate({super.key});
@@ -20,7 +22,18 @@ class AuthGate extends ConsumerWidget {
           return messState.when(
             data: (messId) {
               if (messId != null) {
-                return DashboardScreen(messId: messId);
+                // THE FIX: Check their approval status before letting them in!
+                final memberRole = ref.watch(currentMemberRoleProvider(messId));
+                return memberRole.when(
+                  data: (member) {
+                    if (member?.status == 'pending') {
+                      return WaitingRoomScreen(messId: messId); // Route to holding cell
+                    }
+                    return DashboardScreen(messId: messId); // Route to full access
+                  },
+                  loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
+                  error: (_, __) => const Scaffold(body: Center(child: Text('Error loading status'))),
+                );
               }
               return const MessSelectionScreen();
             },
@@ -28,7 +41,6 @@ class AuthGate extends ConsumerWidget {
             error: (e, _) => Scaffold(body: Center(child: Text('Error loading workspace: $e'))),
           );
         }
-        // If the user is NOT logged in, show the new Onboarding Welcome Carousel
         return const WelcomeScreen();
       },
       loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
