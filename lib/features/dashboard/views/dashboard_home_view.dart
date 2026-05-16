@@ -7,6 +7,8 @@ import '../../finance/views/add_expense_screen.dart';
 import '../../finance/views/add_meal_screen.dart';
 import '../../finance/views/add_payment_screen.dart';
 import '../../finance/views/hisab_sheet_screen.dart';
+import '../../notifications/controllers/notification_provider.dart';
+import '../../notifications/views/notifications_screen.dart';
 
 class DashboardHomeView extends ConsumerWidget {
   final String messId;
@@ -14,42 +16,20 @@ class DashboardHomeView extends ConsumerWidget {
 
   Widget _buildStatCard(String title, String value, IconData icon, Color color) {
     return Container(
-      // THE FIX: Reduced padding slightly to give more breathing room on small screens
       padding: const EdgeInsets.all(16), 
-      decoration: BoxDecoration(
-        color: Colors.white, 
-        borderRadius: BorderRadius.circular(20), 
-        boxShadow: [BoxShadow(color: Colors.grey.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))]
-      ),
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), boxShadow: [BoxShadow(color: Colors.grey.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))]),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Container(
-                padding: const EdgeInsets.all(8), 
-                decoration: BoxDecoration(color: color.withOpacity(0.1), shape: BoxShape.circle), 
-                child: Icon(icon, color: color, size: 18)
-              ),
+              Container(padding: const EdgeInsets.all(8), decoration: BoxDecoration(color: color.withOpacity(0.1), shape: BoxShape.circle), child: Icon(icon, color: color, size: 18)),
               const SizedBox(width: 8),
-              // THE FIX: Wrapped in Expanded with an ellipsis overflow so it never breaks the boundary
-              Expanded(
-                child: Text(
-                  title, 
-                  style: const TextStyle(color: Colors.grey, fontWeight: FontWeight.bold, fontSize: 13),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
+              Expanded(child: Text(title, style: const TextStyle(color: Colors.grey, fontWeight: FontWeight.bold, fontSize: 13), maxLines: 1, overflow: TextOverflow.ellipsis)),
             ],
           ),
           const SizedBox(height: 16),
-          // THE FIX: Wrapped the value in a FittedBox so huge numbers scale down automatically
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            alignment: Alignment.centerLeft,
-            child: Text(value, style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: AppTheme.textDark)),
-          ),
+          FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.centerLeft, child: Text(value, style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: AppTheme.textDark))),
         ],
       ),
     );
@@ -60,6 +40,7 @@ class DashboardHomeView extends ConsumerWidget {
     final messData = ref.watch(messDetailsProvider(messId));
     final memberData = ref.watch(currentMemberRoleProvider(messId));
     final hisabSummary = ref.watch(hisabSummaryProvider(messId));
+    final unreadCount = ref.watch(unreadNotificationCountProvider(messId));
 
     final isManager = memberData.value?.role == 'manager';
 
@@ -73,20 +54,30 @@ class DashboardHomeView extends ConsumerWidget {
           loading: () => const SizedBox.shrink(),
           error: (_, __) => const SizedBox.shrink(),
         ),
+        actions: [
+          // THE NOTIFICATION BELL & BADGE
+          Padding(
+            padding: const EdgeInsets.only(right: 8.0),
+            child: IconButton(
+              icon: Badge(
+                isLabelVisible: unreadCount > 0,
+                label: Text(unreadCount.toString()),
+                backgroundColor: Colors.redAccent,
+                child: const Icon(Icons.notifications_rounded, color: AppTheme.primaryIndigo, size: 28),
+              ),
+              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => NotificationsScreen(messId: messId))),
+            ),
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Hero Card
             Container(
               padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(colors: [AppTheme.primaryIndigo.withOpacity(0.8), AppTheme.primaryIndigo]), 
-                borderRadius: BorderRadius.circular(24), 
-                boxShadow: [BoxShadow(color: AppTheme.primaryIndigo.withOpacity(0.3), blurRadius: 20, offset: const Offset(0, 10))]
-              ),
+              decoration: BoxDecoration(gradient: LinearGradient(colors: [AppTheme.primaryIndigo.withOpacity(0.8), AppTheme.primaryIndigo]), borderRadius: BorderRadius.circular(24), boxShadow: [BoxShadow(color: AppTheme.primaryIndigo.withOpacity(0.3), blurRadius: 20, offset: const Offset(0, 10))]),
               child: Column(
                 children: [
                   const Text('Current Meal Rate', style: TextStyle(color: Colors.white70, fontSize: 16, fontWeight: FontWeight.bold)),
@@ -96,8 +87,6 @@ class DashboardHomeView extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 16),
-            
-            // Stats Grid
             Row(
               children: [
                 Expanded(child: _buildStatCard('Total Bazaar', '৳${hisabSummary['totalBazaar'].toStringAsFixed(0)}', Icons.shopping_basket_rounded, Colors.teal)),
@@ -106,31 +95,20 @@ class DashboardHomeView extends ConsumerWidget {
               ],
             ),
             const SizedBox(height: 32),
-
-            // UNIVERSAL ACCESS: View Hisab
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
                 onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => HisabSheetScreen(messId: messId))),
                 icon: const Icon(Icons.analytics_rounded),
                 label: const Text('View Full Hisab Sheet'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.white, 
-                  foregroundColor: AppTheme.primaryIndigo, 
-                  side: const BorderSide(color: AppTheme.primaryIndigo), 
-                  padding: const EdgeInsets.symmetric(vertical: 16), 
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))
-                ),
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.white, foregroundColor: AppTheme.primaryIndigo, side: const BorderSide(color: AppTheme.primaryIndigo), padding: const EdgeInsets.symmetric(vertical: 16), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
               ),
             ),
             const SizedBox(height: 32),
 
-            // MANAGER ONLY TOOLS
             if (isManager) ...[
               const Text('Manager Controls', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: AppTheme.textDark)),
               const SizedBox(height: 16),
-              
-              // Row 1: Bazaar & Meals
               Row(
                 children: [
                   Expanded(
@@ -153,7 +131,6 @@ class DashboardHomeView extends ConsumerWidget {
                 ],
               ),
               const SizedBox(height: 12),
-              // Row 2: Deposits
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
