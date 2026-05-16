@@ -26,7 +26,6 @@ jobs:
         cache: true
 
     # 🚨 THE ULTIMATE RESET 🚨
-    # This guarantees the v1 embedding error never happens again.
     - name: Delete Corrupted Android Folder
       run: rm -rf android
 
@@ -36,6 +35,11 @@ jobs:
 
     - name: Get Dependencies
       run: flutter pub get
+
+    # 🎨 NEW: GENERATE THE APP ICON ON THE SERVER
+    # This runs right after the Android folder is created so the icons are fresh!
+    - name: Generate App Icons
+      run: flutter pub run flutter_launcher_icons
 
     - name: Build MessIQ APK
       run: flutter build apk --debug
