@@ -14,7 +14,7 @@ class AddMealScreen extends ConsumerStatefulWidget {
 
 class _AddMealScreenState extends ConsumerState<AddMealScreen> {
   final Map<String, double> _memberMeals = {};
-  final _noteCtrl = TextEditingController(); // NEW: The Note Controller
+  final _noteCtrl = TextEditingController(); 
   DateTime _date = DateTime.now();
   bool _isLoading = false;
 
@@ -60,14 +60,13 @@ class _AddMealScreenState extends ConsumerState<AddMealScreen> {
                     ),
                     const SizedBox(height: 20),
 
-                    // NEW: ACCOUNTABILITY NOTE UI
                     const Text('Manager Note (Optional)', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
                     const SizedBox(height: 8),
                     TextField(
                       controller: _noteCtrl,
                       textCapitalization: TextCapitalization.sentences,
                       decoration: InputDecoration(
-                        hintText: 'e.g., Friday special, included guest for Adesh', 
+                        hintText: 'e.g., Friday special meal', 
                         filled: true, 
                         fillColor: Colors.white, 
                         prefixIcon: const Icon(Icons.edit_note_rounded, color: Colors.orange), 
@@ -88,7 +87,7 @@ class _AddMealScreenState extends ConsumerState<AddMealScreen> {
                             children: [
                               CircleAvatar(backgroundColor: AppTheme.primaryIndigo.withOpacity(0.1), child: Text(m.name[0].toUpperCase(), style: const TextStyle(color: AppTheme.primaryIndigo, fontWeight: FontWeight.bold))),
                               const SizedBox(width: 16),
-                              Expanded(child: Text(m.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16))),
+                              Expanded(child: Text(m.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16), maxLines: 1, overflow: TextOverflow.ellipsis)),
                               Row(
                                 children: [
                                   IconButton(
@@ -99,10 +98,33 @@ class _AddMealScreenState extends ConsumerState<AddMealScreen> {
                                       }
                                     },
                                   ),
-                                  Text(_memberMeals[m.uid]!.toStringAsFixed(1), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                                  Text(_memberMeals[m.uid]!.toStringAsFixed(1), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                                   IconButton(
                                     icon: const Icon(Icons.add_circle_outline, color: Colors.green),
                                     onPressed: () => setState(() => _memberMeals[m.uid] = _memberMeals[m.uid]! + 0.5),
+                                  ),
+                                  // NEW: THE SPONSORED GUEST BUTTON
+                                  Container(
+                                    height: 32,
+                                    width: 1,
+                                    color: Colors.grey.shade300,
+                                    margin: const EdgeInsets.symmetric(horizontal: 4),
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.person_add_alt_1_rounded, color: Colors.orange),
+                                    tooltip: 'Add Guest Meal for ${m.name.split(' ')[0]}',
+                                    onPressed: () {
+                                      setState(() {
+                                        // 1. Add a full meal to the sponsor
+                                        _memberMeals[m.uid] = _memberMeals[m.uid]! + 1.0; 
+                                        
+                                        // 2. Automatically generate the accountability note
+                                        String currentNote = _noteCtrl.text;
+                                        String addition = '+1 Guest for ${m.name.split(' ')[0]}';
+                                        _noteCtrl.text = currentNote.isEmpty ? addition : '$currentNote, $addition';
+                                      });
+                                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Guest meal assigned to ${m.name.split(' ')[0]}'), duration: const Duration(seconds: 1)));
+                                    },
                                   ),
                                 ],
                               ),
@@ -128,7 +150,7 @@ class _AddMealScreenState extends ConsumerState<AddMealScreen> {
                           widget.messId, 
                           _date, 
                           _memberMeals,
-                          note: _noteCtrl.text.trim().isEmpty ? null : _noteCtrl.text.trim(), // Sends the note
+                          note: _noteCtrl.text.trim().isEmpty ? null : _noteCtrl.text.trim(),
                         );
                         if (mounted) {
                           Navigator.pop(context);
