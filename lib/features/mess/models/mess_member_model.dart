@@ -1,7 +1,9 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class MessMemberModel {
   final String uid;
-  final String role; // 'manager', 'co-manager', 'member', 'viewer'
-  final String status; // 'approved', 'pending'
+  final String role; // 'manager' or 'member'
+  final String status; // 'approved' or 'pending'
   final DateTime joinedAt;
 
   MessMemberModel({
@@ -16,7 +18,7 @@ class MessMemberModel {
       'uid': uid,
       'role': role,
       'status': status,
-      'joinedAt': joinedAt.toIso8601String(),
+      'joinedAt': Timestamp.fromDate(joinedAt),
     };
   }
 
@@ -24,8 +26,11 @@ class MessMemberModel {
     return MessMemberModel(
       uid: map['uid'] ?? '',
       role: map['role'] ?? 'member',
-      status: map['status'] ?? 'pending',
-      joinedAt: DateTime.parse(map['joinedAt']),
+      // Default to approved if older users don't have the status field yet
+      status: map['status'] ?? 'approved', 
+      joinedAt: map['joinedAt'] != null 
+          ? (map['joinedAt'] as Timestamp).toDate() 
+          : DateTime.now(),
     );
   }
 }
