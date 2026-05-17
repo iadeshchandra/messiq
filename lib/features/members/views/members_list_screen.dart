@@ -3,8 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../dashboard/controllers/dashboard_providers.dart';
-// CRITICAL: This import links to the file we just fixed above!
 import 'member_detail_screen.dart'; 
+// NEW: Import the QR Invite Sheet we just created
+import 'qr_invite_sheet.dart';
 
 class MembersListScreen extends ConsumerStatefulWidget {
   final String messId;
@@ -15,7 +16,7 @@ class MembersListScreen extends ConsumerStatefulWidget {
 }
 
 class _MembersListScreenState extends ConsumerState<MembersListScreen> {
-  
+
   void _showBroadcastSheet(BuildContext context) {
     final titleCtrl = TextEditingController();
     final bodyCtrl = TextEditingController();
@@ -139,10 +140,16 @@ class _MembersListScreenState extends ConsumerState<MembersListScreen> {
         backgroundColor: AppTheme.backgroundLight,
         elevation: 0,
         actions: [
+          // FIXED: This now opens your QR Invite Sheet!
           IconButton(
             icon: const Icon(Icons.qr_code_rounded, color: AppTheme.primaryIndigo),
             onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('QR Invite Code feature coming soon!')));
+              showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                backgroundColor: Colors.transparent,
+                builder: (ctx) => QRInviteSheet(messId: widget.messId),
+              );
             },
           )
         ],
@@ -166,7 +173,7 @@ class _MembersListScreenState extends ConsumerState<MembersListScreen> {
                 itemCount: members.length,
                 itemBuilder: (context, index) {
                   final member = members[index];
-                  
+
                   final statusDoc = statuses.firstWhere(
                     (s) => s['uid'] == member.uid,
                     orElse: () => {'role': 'member'},
@@ -193,7 +200,6 @@ class _MembersListScreenState extends ConsumerState<MembersListScreen> {
                       ),
                       trailing: const Icon(Icons.chevron_right_rounded, color: Colors.grey),
                       onTap: () {
-                        // The routing is completely fixed!
                         Navigator.push(context, MaterialPageRoute(builder: (_) => MemberDetailScreen(member: member, isManager: isManager, messId: widget.messId)));
                       },
                     ),
