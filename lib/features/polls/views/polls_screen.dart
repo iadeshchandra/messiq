@@ -56,8 +56,7 @@ class _PollsScreenState extends ConsumerState<PollsScreen> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  
-                  // NEW: Deadline Picker UI
+
                   ListTile(
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                     tileColor: AppTheme.backgroundLight,
@@ -146,7 +145,7 @@ class _PollsScreenState extends ConsumerState<PollsScreen> {
                             widget.messId, 
                             questionCtrl.text, 
                             options,
-                            expiresAt: selectedDeadline, // Passes the deadline to the backend
+                            expiresAt: selectedDeadline, 
                           );
                           if (ctx.mounted) Navigator.pop(ctx);
                         }
@@ -209,11 +208,9 @@ class _PollsScreenState extends ConsumerState<PollsScreen> {
               final totalVotes = poll.votes.length;
               final myVoteIndex = currentUser != null ? poll.votes[currentUser.uid] : null;
 
-              // NEW: Auto-lock logic based on the deadline
               final bool isExpired = poll.expiresAt != null && DateTime.now().isAfter(poll.expiresAt!);
               final bool isActuallyActive = poll.isActive && !isExpired;
 
-              // NEW: Countdown text generator
               String deadlineText = '';
               if (poll.expiresAt != null) {
                 if (isExpired) {
@@ -246,7 +243,9 @@ class _PollsScreenState extends ConsumerState<PollsScreen> {
                             children: [
                               Text(poll.question, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.textDark)),
                               const SizedBox(height: 4),
-                              Row(
+                              // FIXED: Changed to Wrap to prevent overflow!
+                              Wrap(
+                                crossAxisAlignment: WrapCrossAlignment.center,
                                 children: [
                                   Text('Asked by ${poll.addedByName} • $totalVotes votes', style: const TextStyle(fontSize: 12, color: Colors.grey)),
                                   if (poll.expiresAt != null) ...[
@@ -292,7 +291,6 @@ class _PollsScreenState extends ConsumerState<PollsScreen> {
 
                       return GestureDetector(
                         onTap: () {
-                          // Voting only allowed if it hasn't expired and is manually active
                           if (isActuallyActive && currentUser != null) {
                             ref.read(pollControllerProvider).voteOnPoll(widget.messId, poll.id, optIndex);
                           } else if (!isActuallyActive) {
