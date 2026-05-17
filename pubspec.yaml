@@ -13,6 +13,7 @@ dependencies:
   firebase_core: ^2.24.2
   firebase_auth: ^4.15.3
   cloud_firestore: ^4.13.6
+  firebase_messaging: ^14.7.10
 
   flutter_riverpod: ^2.4.9
   google_fonts: ^6.1.0
@@ -31,7 +32,7 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
-  
+
   assets:
     - assets/
 
@@ -39,5 +40,5 @@ flutter_launcher_icons:
   android: true
   ios: false # FIXED: Set to false so the iOS folder missing error is bypassed
   image_path: "assets/app_logo.png"
-  adaptive_icon_background: "#4F46E5"
+  adaptive_icon_background: "#FFFFFF" # FIXED: Changed to solid white
   adaptive_icon_foreground: "assets/app_logo.png"
