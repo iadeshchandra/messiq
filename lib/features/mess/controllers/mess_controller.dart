@@ -49,7 +49,7 @@ class MessController extends StateNotifier<bool> {
   Future<void> rejectMember(String messId, String targetUid) async {
     state = true;
     try {
-      await _messRepository.rejectMember(messId, targetUid);
+      await _messRepository.removeOrRejectMember(messId, targetUid);
     } finally {
       state = false;
     }
