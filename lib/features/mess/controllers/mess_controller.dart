@@ -34,4 +34,24 @@ class MessController extends StateNotifier<bool> {
       state = false;
     }
   }
+
+  // 🛡️ DWARAPALA (MANAGER) ACTIONS
+  
+  Future<void> approveMember(String messId, String targetUid) async {
+    state = true;
+    try {
+      await _messRepository.approveMember(messId, targetUid);
+    } finally {
+      state = false;
+    }
+  }
+
+  Future<void> rejectMember(String messId, String targetUid) async {
+    state = true;
+    try {
+      await _messRepository.rejectMember(messId, targetUid);
+    } finally {
+      state = false;
+    }
+  }
 }
