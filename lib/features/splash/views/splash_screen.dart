@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import '../../../core/theme/app_theme.dart';
-import '../../auth/views/auth_wrapper.dart'; 
+
+// USING SAFE PACKAGE IMPORTS
+import 'package:messiq/core/theme/app_theme.dart';
+import 'package:messiq/features/auth/views/auth_wrapper.dart'; 
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -38,6 +40,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
       if (mounted) {
         Navigator.pushReplacement(
           context, 
+          // If your class is not named AuthWrapper, change it here!
           MaterialPageRoute(builder: (_) => const AuthWrapper()),
         );
       }
@@ -80,7 +83,6 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                       BoxShadow(color: Colors.black26, blurRadius: 20, offset: Offset(0, 10))
                     ],
                   ),
-                  // This displays your actual logo image on the splash screen!
                   child: Image.asset('assets/app_logo.png', fit: BoxFit.contain),
                 ),
               ),
