@@ -3,10 +3,17 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/theme/app_theme.dart';
 import 'features/splash/views/splash_screen.dart'; 
+// 🚨 REQUIRED IMPORT
+import 'firebase_options.dart'; 
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
+  
+  // 🚨 REQUIRED OPTIONS
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform, 
+  );
+  
   runApp(const ProviderScope(child: MessIQApp()));
 }
 
