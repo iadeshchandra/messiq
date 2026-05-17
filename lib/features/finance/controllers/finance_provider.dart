@@ -2,6 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../auth/controllers/auth_controller.dart';
 import '../models/finance_models.dart';
+// NEW: Required to fetch the member list for individual Hisab calculations
+import '../../dashboard/controllers/dashboard_providers.dart';
 
 // --- DATA STREAMS ---
 final messExpensesProvider = StreamProvider.family<List<ExpenseModel>, String>((ref, messId) {
@@ -23,7 +25,7 @@ final hisabSummaryProvider = Provider.family<Map<String, dynamic>, String>((ref,
 
   double totalBazaar = expenses.where((e) => e.type.toLowerCase() == 'bazaar').fold(0.0, (sum, e) => sum + e.amount);
   double totalUtility = expenses.where((e) => e.type.toLowerCase() != 'bazaar').fold(0.0, (sum, e) => sum + e.amount);
-  
+
   double totalMeals = 0.0;
   for (var meal in meals) {
     totalMeals += meal.memberMeals.values.fold(0.0, (sum, count) => sum + count);
@@ -39,6 +41,54 @@ final hisabSummaryProvider = Provider.family<Map<String, dynamic>, String>((ref,
   };
 });
 
+// FIXED: ADDED THE MISSING INDIVIDUAL HISAB PROVIDER
+final individualHisabProvider = Provider.family<List<Map<String, dynamic>>, String>((ref, messId) {
+  final membersAsync = ref.watch(messMembersDirectoryProvider(messId));
+  final paymentsAsync = ref.watch(messPaymentsProvider(messId));
+  final expensesAsync = ref.watch(messExpensesProvider(messId));
+  final mealsAsync = ref.watch(messMealsProvider(messId));
+  final summary = ref.watch(hisabSummaryProvider(messId));
+
+  final members = membersAsync.value ?? [];
+  final payments = paymentsAsync.value ?? [];
+  final expenses = expensesAsync.value ?? [];
+  final meals = mealsAsync.value ?? [];
+  final mealRate = summary['mealRate'] as double;
+
+  List<Map<String, dynamic>> memberHisabList = [];
+
+  for (var member in members) {
+    double deposits = payments.where((p) => p.memberUid == member.uid).fold(0.0, (sum, p) => sum + p.amount);
+    
+    double totalMeals = 0.0;
+    for (var meal in meals) {
+      if (meal.memberMeals.containsKey(member.uid)) {
+        totalMeals += meal.memberMeals[member.uid]!;
+      }
+    }
+    
+    double mealCost = totalMeals * mealRate;
+    double totalUtility = summary['totalUtility'] as double;
+    double individualUtility = members.isNotEmpty ? (totalUtility / members.length) : 0.0;
+    double addedExpenses = expenses.where((e) => e.addedByUid == member.uid).fold(0.0, (sum, e) => sum + e.amount);
+    double totalCost = mealCost + individualUtility;
+    double balance = (deposits + addedExpenses) - totalCost;
+
+    memberHisabList.add({
+      'member': member,
+      'totalMeals': totalMeals,
+      'mealCost': mealCost,
+      'individualUtility': individualUtility,
+      'totalCost': totalCost,
+      'deposits': deposits,
+      'addedExpenses': addedExpenses,
+      'balance': balance,
+    });
+  }
+
+  return memberHisabList;
+});
+
 // --- CONTROLLER ACTIONS ---
 final financeControllerProvider = Provider((ref) => FinanceController(ref: ref));
 
@@ -49,7 +99,7 @@ class FinanceController {
   Future<void> addExpense(String messId, double amount, String description, String type, DateTime date, {String? note}) async {
     final user = ref.read(authStateProvider).value;
     if (user == null) return;
-    
+
     // Fetch current user details to stamp the record
     final userDoc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
     final userName = userDoc.data()?['name'] ?? 'Manager';
