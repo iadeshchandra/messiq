@@ -28,7 +28,6 @@ class _HisabSheetScreenState extends ConsumerState<HisabSheetScreen> {
 
       if (messData == null || hisabList.isEmpty) throw Exception("No data available to export.");
 
-      // Generate the PDF File using our Service
       final File pdfFile = await PdfService.generateHisabPdf(
         messName: messData.name,
         messId: widget.messId,
@@ -64,8 +63,7 @@ class _HisabSheetScreenState extends ConsumerState<HisabSheetScreen> {
             const SizedBox(height: 8),
             const Text('Your monthly statement has been generated successfully.', textAlign: TextAlign.center, style: TextStyle(color: Colors.grey)),
             const SizedBox(height: 32),
-            
-            // ACTION: Save to Device
+
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
@@ -74,27 +72,25 @@ class _HisabSheetScreenState extends ConsumerState<HisabSheetScreen> {
                 style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryIndigo, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 16), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
                 onPressed: () async {
                   try {
-                    // Save to standard Android Downloads folder
                     final downloadDir = Directory('/storage/emulated/0/Download');
                     if (await downloadDir.exists()) {
                       final newPath = '${downloadDir.path}/${pdfFile.path.split('/').last}';
                       await pdfFile.copy(newPath);
                       if (ctx.mounted) {
                         Navigator.pop(ctx);
-                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Saved successfully to Downloads!'), backgroundColor: Colors.green));
+                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Saved successfully to Downloads!'), backgroundColor: Colors.green));
                       }
                     } else {
                       throw Exception("Downloads folder not found.");
                     }
                   } catch (e) {
-                    if (ctx.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to download: Try using Share to save.'), backgroundColor: Colors.orange));
+                    if (ctx.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Failed to download: Try using Share to save.'), backgroundColor: Colors.orange));
                   }
                 },
               ),
             ),
             const SizedBox(height: 16),
-            
-            // ACTION: Share Native
+
             SizedBox(
               width: double.infinity,
               child: OutlinedButton.icon(
@@ -142,7 +138,15 @@ class _HisabSheetScreenState extends ConsumerState<HisabSheetScreen> {
               itemBuilder: (context, index) {
                 final hisab = hisabList[index];
                 final UserModel member = hisab['member'];
-                final double balance = hisab['balance'];
+                
+                // FIXED: Safety checks and matching correct math variables
+                final double balance = hisab['balance'] ?? 0.0;
+                final double totalMeals = hisab['totalMeals'] ?? 0.0;
+                final double mealCost = hisab['mealCost'] ?? 0.0;
+                final double individualUtility = hisab['individualUtility'] ?? 0.0;
+                final double totalCost = hisab['totalCost'] ?? 0.0;
+                final double deposits = hisab['deposits'] ?? 0.0;
+                
                 final bool isDue = balance < 0;
 
                 return Container(
@@ -172,12 +176,12 @@ class _HisabSheetScreenState extends ConsumerState<HisabSheetScreen> {
                         padding: const EdgeInsets.all(16),
                         child: Column(
                           children: [
-                            _buildDetailRow('Total Meals Consumed', '${hisab['totalMeals'].toStringAsFixed(1)} Meals'),
-                            _buildDetailRow('Meal Cost', '৳${hisab['mealCost'].toStringAsFixed(0)}'),
-                            _buildDetailRow('Shared Utilities', '৳${hisab['utilityShare'].toStringAsFixed(0)}'),
+                            _buildDetailRow('Total Meals Consumed', '${totalMeals.toStringAsFixed(1)} Meals'),
+                            _buildDetailRow('Meal Cost', '৳${mealCost.toStringAsFixed(0)}'),
+                            _buildDetailRow('Shared Utilities', '৳${individualUtility.toStringAsFixed(0)}'),
                             const Divider(height: 24),
-                            _buildDetailRow('Total Target Due', '৳${hisab['totalDue'].toStringAsFixed(0)}', isBold: true),
-                            _buildDetailRow('Total Cash Paid', '৳${hisab['totalPaid'].toStringAsFixed(0)}', isBold: true, color: Colors.teal),
+                            _buildDetailRow('Total Target Due', '৳${totalCost.toStringAsFixed(0)}', isBold: true),
+                            _buildDetailRow('Total Cash Paid', '৳${deposits.toStringAsFixed(0)}', isBold: true, color: Colors.teal),
                           ],
                         ),
                       )
