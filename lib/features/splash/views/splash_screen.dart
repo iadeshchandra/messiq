@@ -3,7 +3,8 @@ import 'package:flutter/material.dart';
 
 // USING SAFE PACKAGE IMPORTS
 import 'package:messiq/core/theme/app_theme.dart';
-import 'package:messiq/features/auth/views/auth_wrapper.dart'; 
+// FIXED: Changed to auth_gate.dart to match your actual file!
+import 'package:messiq/features/auth/views/auth_gate.dart'; 
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -20,16 +21,16 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
   @override
   void initState() {
     super.initState();
-    
+
     _animationController = AnimationController(
       vsync: this, 
       duration: const Duration(milliseconds: 1500),
     );
-    
+
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _animationController, curve: Curves.easeIn),
     );
-    
+
     _scaleAnimation = Tween<double>(begin: 0.5, end: 1.0).animate(
       CurvedAnimation(parent: _animationController, curve: Curves.easeOutBack),
     );
@@ -40,8 +41,8 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
       if (mounted) {
         Navigator.pushReplacement(
           context, 
-          // If your class is not named AuthWrapper, change it here!
-          MaterialPageRoute(builder: (_) => const AuthWrapper()),
+          // FIXED: Changed to AuthGate() to match your actual file!
+          MaterialPageRoute(builder: (_) => const AuthGate()),
         );
       }
     });
