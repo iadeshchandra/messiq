@@ -37,7 +37,7 @@ flutter:
 
 flutter_launcher_icons:
   android: true
-  ios: true
+  ios: false # FIXED: Set to false so the iOS folder missing error is bypassed
   image_path: "assets/app_logo.png"
   adaptive_icon_background: "#4F46E5"
   adaptive_icon_foreground: "assets/app_logo.png"
