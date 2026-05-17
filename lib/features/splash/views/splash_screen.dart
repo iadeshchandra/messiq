@@ -72,6 +72,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                 child: Container(
                   width: 120,
                   height: 120,
+                  padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(32),
@@ -79,7 +80,8 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                       BoxShadow(color: Colors.black26, blurRadius: 20, offset: Offset(0, 10))
                     ],
                   ),
-                  child: const Icon(Icons.home_work_rounded, size: 70, color: AppTheme.primaryIndigo),
+                  // This displays your actual logo image on the splash screen!
+                  child: Image.asset('assets/app_logo.png', fit: BoxFit.contain),
                 ),
               ),
             ),
