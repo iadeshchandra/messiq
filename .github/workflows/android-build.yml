@@ -31,6 +31,10 @@ jobs:
     - name: Regenerate Pristine Android Folder
       run: flutter create --platforms=android --org com.trackiq .
 
+    # 🎨 NEW: This instantly fixes the lowercase name issue!
+    - name: Rename App Label
+      run: sed -i 's/android:label="messiq"/android:label="MessIQ"/g' android/app/src/main/AndroidManifest.xml
+
     - name: Get Dependencies
       run: flutter pub get
 
