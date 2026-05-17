@@ -20,7 +20,7 @@ class _DutyRosterScreenState extends ConsumerState<DutyRosterScreen> {
     final titleCtrl = TextEditingController();
     UserModel? selectedMember;
     DateTime selectedDate = DateTime.now();
-    TimeOfDay? selectedTime; // NEW: Precise time tracker
+    TimeOfDay? selectedTime; 
 
     showModalBottomSheet(
       context: context,
@@ -74,7 +74,6 @@ class _DutyRosterScreenState extends ConsumerState<DutyRosterScreen> {
                   ),
                   const SizedBox(height: 16),
 
-                  // Date & Time Row
                   Row(
                     children: [
                       Expanded(
@@ -118,7 +117,7 @@ class _DutyRosterScreenState extends ConsumerState<DutyRosterScreen> {
                               setSheetState(() => selectedTime = picked);
                             }
                           },
-                          onLongPress: () => setSheetState(() => selectedTime = null), // Clear time
+                          onLongPress: () => setSheetState(() => selectedTime = null), 
                         ),
                       ),
                     ],
@@ -136,7 +135,6 @@ class _DutyRosterScreenState extends ConsumerState<DutyRosterScreen> {
                       ),
                       onPressed: () async {
                         if (titleCtrl.text.isNotEmpty && selectedMember != null) {
-                          // Combine date and time
                           DateTime? finalDueTime;
                           if (selectedTime != null) {
                             finalDueTime = DateTime(
@@ -154,7 +152,7 @@ class _DutyRosterScreenState extends ConsumerState<DutyRosterScreen> {
                             assignedToUid: selectedMember!.uid,
                             assignedToName: selectedMember!.name,
                             assignedDate: selectedDate,
-                            dueTime: finalDueTime, // Passes the precise deadline
+                            dueTime: finalDueTime, 
                           );
                           if (ctx.mounted) Navigator.pop(ctx);
                         }
@@ -219,7 +217,6 @@ class _DutyRosterScreenState extends ConsumerState<DutyRosterScreen> {
 
           final sortedDuties = List.of(duties)..sort((a, b) {
             if (a.isCompleted == b.isCompleted) {
-              // Sort by dueTime if available, else assignedDate
               final aTime = a.dueTime ?? a.assignedDate;
               final bTime = b.dueTime ?? b.assignedDate;
               return aTime.compareTo(bTime);
@@ -234,21 +231,17 @@ class _DutyRosterScreenState extends ConsumerState<DutyRosterScreen> {
               final duty = sortedDuties[index];
               final isMyDuty = currentUser != null && duty.assignedToUid == currentUser.uid;
               
-              // NEW: Strict Deadline Calculation
               bool isPastDue = false;
               if (!duty.isCompleted) {
                 if (duty.dueTime != null) {
-                  // Precise down to the minute
                   isPastDue = DateTime.now().isAfter(duty.dueTime!);
                 } else {
-                  // Fallback: If no time, it's past due if the *day* is over
                   final today = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
                   final assignedDay = DateTime(duty.assignedDate.year, duty.assignedDate.month, duty.assignedDate.day);
                   isPastDue = assignedDay.isBefore(today);
                 }
               }
 
-              // Format time for display
               String timeDisplay = '';
               if (duty.dueTime != null) {
                 final h = duty.dueTime!.hour > 12 ? duty.dueTime!.hour - 12 : (duty.dueTime!.hour == 0 ? 12 : duty.dueTime!.hour);
@@ -286,7 +279,9 @@ class _DutyRosterScreenState extends ConsumerState<DutyRosterScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const SizedBox(height: 4),
-                      Row(
+                      // FIXED: Changed to Wrap to prevent overflow on narrow screens
+                      Wrap(
+                        crossAxisAlignment: WrapCrossAlignment.center,
                         children: [
                           Icon(Icons.person_rounded, size: 14, color: isMyDuty ? AppTheme.primaryIndigo : Colors.grey),
                           const SizedBox(width: 4),
@@ -294,7 +289,9 @@ class _DutyRosterScreenState extends ConsumerState<DutyRosterScreen> {
                         ],
                       ),
                       const SizedBox(height: 4),
-                      Row(
+                      // FIXED: Changed to Wrap to prevent overflow on narrow screens
+                      Wrap(
+                        crossAxisAlignment: WrapCrossAlignment.center,
                         children: [
                           Icon(Icons.calendar_month_rounded, size: 14, color: isPastDue ? Colors.redAccent : Colors.grey),
                           const SizedBox(width: 4),
