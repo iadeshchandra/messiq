@@ -3,17 +3,23 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class BazaarItemModel {
   final String id;
   final String name;
-  final bool isPurchased;
-  final String addedByUid;
+  final double quantity;
+  final String unit; // 'kg', 'litre', 'piece', etc.
+  final bool isBought;
   final String addedByName;
+  final String? boughtByName;
+  final double estimatedCost;
   final DateTime createdAt;
 
   BazaarItemModel({
     required this.id,
     required this.name,
-    this.isPurchased = false,
-    required this.addedByUid,
+    required this.quantity,
+    required this.unit,
+    required this.isBought,
     required this.addedByName,
+    this.boughtByName,
+    required this.estimatedCost,
     required this.createdAt,
   });
 
@@ -21,30 +27,27 @@ class BazaarItemModel {
     return {
       'id': id,
       'name': name,
-      'isPurchased': isPurchased,
-      'addedByUid': addedByUid,
+      'quantity': quantity,
+      'unit': unit,
+      'isBought': isBought,
       'addedByName': addedByName,
+      'boughtByName': boughtByName,
+      'estimatedCost': estimatedCost,
       'createdAt': Timestamp.fromDate(createdAt),
     };
   }
 
-  factory BazaarItemModel.fromMap(Map<String, dynamic> map, String docId) {
-    DateTime parsedDate = DateTime.now();
-    if (map['createdAt'] != null) {
-      if (map['createdAt'] is Timestamp) {
-        parsedDate = (map['createdAt'] as Timestamp).toDate();
-      } else if (map['createdAt'] is String) {
-        parsedDate = DateTime.tryParse(map['createdAt']) ?? DateTime.now();
-      }
-    }
-
+  factory BazaarItemModel.fromMap(Map<String, dynamic> map) {
     return BazaarItemModel(
-      id: docId,
-      name: map['name']?.toString() ?? 'Unknown Item',
-      isPurchased: map['isPurchased'] ?? false,
-      addedByUid: map['addedByUid']?.toString() ?? '',
-      addedByName: map['addedByName']?.toString() ?? 'Someone',
-      createdAt: parsedDate,
+      id: map['id'] ?? '',
+      name: map['name'] ?? '',
+      quantity: (map['quantity'] ?? 0.0).toDouble(),
+      unit: map['unit'] ?? 'kg',
+      isBought: map['isBought'] ?? false,
+      addedByName: map['addedByName'] ?? 'Anonymous',
+      boughtByName: map['boughtByName'],
+      estimatedCost: (map['estimatedCost'] ?? 0.0).toDouble(),
+      createdAt: (map['createdAt'] as Timestamp).toDate(),
     );
   }
 }
