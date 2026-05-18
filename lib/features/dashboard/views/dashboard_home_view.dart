@@ -13,10 +13,11 @@ import '../../notifications/views/notifications_screen.dart';
 import '../../bazaar/views/bazaar_list_screen.dart';
 import '../../polls/views/polls_screen.dart';
 import '../../duties/views/duty_roster_screen.dart';
-// Core dynamic telemetry imports
+// Core dynamic telemetry & AI imports
 import '../../auth/controllers/auth_controller.dart';
 import '../../polls/controllers/poll_provider.dart';
 import '../../duties/controllers/duty_provider.dart';
+import '../../ai_insights/controllers/ai_predictor_provider.dart'; // NEW AI IMPORT
 
 class DashboardHomeView extends ConsumerWidget {
   final String messId;
@@ -72,6 +73,9 @@ class DashboardHomeView extends ConsumerWidget {
     // Live database watchers
     final pollsAsync = ref.watch(messPollsProvider(messId));
     final dutiesAsync = ref.watch(messDutiesProvider(messId));
+    
+    // NEW: Watch the AI Predictor
+    final fundRunway = ref.watch(fundRunwayProvider(messId));
 
     final isManager = memberData.value?.role == 'manager';
 
@@ -107,6 +111,7 @@ class DashboardHomeView extends ConsumerWidget {
           ref.invalidate(unreadNotificationCountProvider(messId));
           ref.invalidate(messPollsProvider(messId));
           ref.invalidate(messDutiesProvider(messId));
+          ref.invalidate(fundRunwayProvider(messId)); // Refresh AI insight
         },
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
@@ -134,6 +139,37 @@ class DashboardHomeView extends ConsumerWidget {
                 ),
               ),
               const SizedBox(height: 16),
+              
+              // NEW AI FUND RUNWAY PREDICTOR CARD
+              if (fundRunway != null)
+                Container(
+                  margin: const EdgeInsets.only(bottom: 16),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: fundRunway.isCritical ? Colors.redAccent.withOpacity(0.1) : Colors.green.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: fundRunway.isCritical ? Colors.redAccent.withOpacity(0.3) : Colors.green.withOpacity(0.3)),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        fundRunway.isCritical ? Icons.warning_rounded : Icons.auto_awesome_rounded, 
+                        color: fundRunway.isCritical ? Colors.redAccent : Colors.teal
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          fundRunway.message,
+                          style: TextStyle(
+                            fontSize: 13, 
+                            fontWeight: FontWeight.bold, 
+                            color: fundRunway.isCritical ? Colors.red.shade700 : Colors.teal.shade700,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
 
               // Top Stats Grid Row
               Row(
@@ -290,7 +326,7 @@ class DashboardHomeView extends ConsumerWidget {
                     ),
                     SizedBox(height: 8),
                     Text(
-                      '“সমানো মन्त्रः समितिः সমানী সমানং মনঃ সহ চিত্তমেষাম্”',
+                      '“समानो मन्त्रः समितिः समानी समानं मनः सह चित्तमेषाम्”',
                       textAlign: TextAlign.center,
                       style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppTheme.textDark, fontStyle: FontStyle.italic),
                     ),
