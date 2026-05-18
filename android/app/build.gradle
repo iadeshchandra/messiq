@@ -45,3 +45,15 @@ flutter {
 dependencies {
     // Flutter dependencies are handled automatically by the Flutter Gradle Plugin.
 }
+
+// NEW: The Master Override! 
+// This intercepts every hidden plugin (like share_plus) and forces them to compile at API 34
+gradle.projectsEvaluated {
+    rootProject.subprojects { project ->
+        if (project.hasProperty('android')) {
+            project.android {
+                compileSdkVersion = 34
+            }
+        }
+    }
+}
