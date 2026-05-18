@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_theme.dart';
 import '../controllers/finance_provider.dart';
+import '../../ai_insights/controllers/ocr_scanner_provider.dart'; // NEW: The AI Scanner Import
 
 class AddExpenseScreen extends ConsumerStatefulWidget {
   final String messId;
@@ -14,10 +15,13 @@ class AddExpenseScreen extends ConsumerStatefulWidget {
 class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
   final _amountCtrl = TextEditingController();
   final _descCtrl = TextEditingController();
-  final _noteCtrl = TextEditingController(); // NEW: The Note Controller
+  final _noteCtrl = TextEditingController(); // The Note Controller
   String _type = 'Bazaar';
   DateTime _date = DateTime.now();
   bool _isLoading = false;
+  
+  // NEW: State for AI Scanner
+  bool _isScanning = false; 
 
   @override
   void dispose() {
@@ -25,6 +29,29 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
     _descCtrl.dispose();
     _noteCtrl.dispose();
     super.dispose();
+  }
+
+  // NEW: Trigger the AI Scanner
+  Future<void> _startAiScan() async {
+    setState(() => _isScanning = true);
+    
+    final ocrService = ref.read(ocrScannerProvider);
+    final scannedTotal = await ocrService.scanReceiptForTotal();
+    
+    if (mounted) {
+      setState(() => _isScanning = false);
+
+      if (scannedTotal != null) {
+        _amountCtrl.text = scannedTotal.toStringAsFixed(0);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('AI Found Total: ৳${scannedTotal.toStringAsFixed(0)}'), backgroundColor: Colors.teal),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not detect a clear total amount. Please enter manually.'), backgroundColor: Colors.redAccent),
+        );
+      }
+    }
   }
 
   @override
@@ -37,6 +64,25 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // NEW: AI RECEIPT SCANNER BUTTON
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: _isScanning ? null : _startAiScan,
+                icon: _isScanning 
+                    ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.primaryIndigo))
+                    : const Icon(Icons.document_scanner_rounded),
+                label: Text(_isScanning ? 'AI Scanning Receipt...' : 'Smart Scan Bazaar Slip'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppTheme.primaryIndigo,
+                  side: const BorderSide(color: AppTheme.primaryIndigo, width: 2),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                ),
+              ),
+            ),
+            const SizedBox(height: 32),
+
             const Text('Expense Type', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
             const SizedBox(height: 8),
             Row(
@@ -97,7 +143,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
             ),
             const SizedBox(height: 20),
 
-            // NEW: ACCOUNTABILITY NOTE UI
+            // ACCOUNTABILITY NOTE UI
             const Text('Manager Note (Optional)', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
             const SizedBox(height: 8),
             TextField(
