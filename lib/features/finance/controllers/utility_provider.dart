@@ -29,7 +29,7 @@ class UtilityController extends StateNotifier<bool> {
   }) async {
     state = true;
     final firestore = FirebaseFirestore.instance;
-    
+
     try {
       final currentUser = _ref.read(authStateProvider).value;
       if (currentUser == null) throw Exception("User session missing.");
@@ -56,7 +56,7 @@ class UtilityController extends StateNotifier<bool> {
         totalAmount: totalAmount,
         perMemberShare: share,
         addedByUid: currentUser.uid,
-        addedByName: currentUser.name,
+        addedByName: currentUser.displayName ?? 'Unknown', // FIXED: Firebase user name attribute
         date: DateTime.now(),
         splitBetweenUids: activeMemberUids,
       );
@@ -76,7 +76,7 @@ class UtilityController extends StateNotifier<bool> {
         'amount': totalAmount,
         'type': 'Utility',
         'addedByUid': currentUser.uid,
-        'addedByName': currentUser.name,
+        'addedByName': currentUser.displayName ?? 'Unknown', // FIXED: Firebase user name attribute
         'date': Timestamp.now(),
         'note': 'Automatically auto-split equally among ${activeMemberUids.length} members.',
       });
