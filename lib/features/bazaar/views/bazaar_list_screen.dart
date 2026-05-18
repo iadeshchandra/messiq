@@ -160,7 +160,8 @@ class _BazaarListScreenState extends ConsumerState<BazaarListScreen> {
                 child: ListTile(
                   leading: IconButton(
                     icon: Icon(
-                      item.isBought ? Icons.check_box_rounded : Icons.checkbox_shadow,
+                      // FIXED: Swapped 'checkbox_shadow' for valid Material icon
+                      item.isBought ? Icons.check_box_rounded : Icons.check_box_outline_blank_rounded,
                       color: item.isBought ? Colors.teal : Colors.grey,
                       size: 26,
                     ),
