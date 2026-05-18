@@ -4,7 +4,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../auth/controllers/auth_controller.dart';
 import '../../dashboard/controllers/dashboard_providers.dart';
 import '../controllers/poll_provider.dart';
-import '../../ai_insights/controllers/meal_optimizer_provider.dart'; 
+import '../../ai_insights/controllers/meal_optimizer_provider.dart';
 
 class PollsScreen extends ConsumerStatefulWidget {
   final String messId;
@@ -20,6 +20,7 @@ class _PollsScreenState extends ConsumerState<PollsScreen> {
     TextEditingController(text: 'Fish Curry 🐟'),
     TextEditingController(text: 'Egg Bhuna 🥚'),
   ];
+  int _deadlineHours = 2; // NEW: Default deadline
 
   @override
   void dispose() {
@@ -37,92 +38,105 @@ class _PollsScreenState extends ConsumerState<PollsScreen> {
       backgroundColor: Colors.transparent,
       builder: (ctx) => Padding(
         padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
-        child: Container(
-          padding: const EdgeInsets.all(24),
-          decoration: const BoxDecoration(color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(32))),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('Create Meal Poll', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppTheme.textDark)),
-              const SizedBox(height: 16),
-              
-              if (aiInsight != null)
-                Container(
-                  margin: const EdgeInsets.only(bottom: 20),
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: aiInsight.isHigh ? Colors.redAccent.withOpacity(0.1) : Colors.green.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: aiInsight.isHigh ? Colors.redAccent.withOpacity(0.3) : Colors.green.withOpacity(0.3)),
+        child: SingleChildScrollView( // FIXED: Prevents yellow hazard tape crash!
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            decoration: const BoxDecoration(color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(32))),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Create Meal Poll', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppTheme.textDark)),
+                const SizedBox(height: 16),
+                
+                if (aiInsight != null)
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 20),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: aiInsight.isHigh ? Colors.redAccent.withOpacity(0.1) : Colors.green.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: aiInsight.isHigh ? Colors.redAccent.withOpacity(0.3) : Colors.green.withOpacity(0.3)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(aiInsight.isHigh ? Icons.trending_up_rounded : Icons.trending_down_rounded, color: aiInsight.isHigh ? Colors.redAccent : Colors.teal, size: 18),
+                            const SizedBox(width: 8),
+                            Text(aiInsight.title, style: TextStyle(fontWeight: FontWeight.bold, color: aiInsight.isHigh ? Colors.redAccent : Colors.teal, fontSize: 13)),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Text(aiInsight.message, style: const TextStyle(fontSize: 12, color: AppTheme.textDark)),
+                        if (aiInsight.suggestedLowCostMeals.isNotEmpty) ...[
+                          const SizedBox(height: 8),
+                          Wrap(
+                            spacing: 6,
+                            children: aiInsight.suggestedLowCostMeals.map((meal) => Chip(
+                              label: Text(meal, style: const TextStyle(fontSize: 10, color: Colors.white)),
+                              backgroundColor: Colors.redAccent.shade200,
+                              padding: EdgeInsets.zero,
+                              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            )).toList(),
+                          )
+                        ]
+                      ],
+                    ),
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(aiInsight.isHigh ? Icons.trending_up_rounded : Icons.trending_down_rounded, color: aiInsight.isHigh ? Colors.redAccent : Colors.teal, size: 18),
-                          const SizedBox(width: 8),
-                          Text(aiInsight.title, style: TextStyle(fontWeight: FontWeight.bold, color: aiInsight.isHigh ? Colors.redAccent : Colors.teal, fontSize: 13)),
-                        ],
-                      ),
-                      const SizedBox(height: 6),
-                      Text(aiInsight.message, style: const TextStyle(fontSize: 12, color: AppTheme.textDark)),
-                      if (aiInsight.suggestedLowCostMeals.isNotEmpty) ...[
-                        const SizedBox(height: 8),
-                        Wrap(
-                          spacing: 6,
-                          children: aiInsight.suggestedLowCostMeals.map((meal) => Chip(
-                            label: Text(meal, style: const TextStyle(fontSize: 10, color: Colors.white)),
-                            backgroundColor: Colors.redAccent.shade200,
-                            padding: EdgeInsets.zero,
-                            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                          )).toList(),
-                        )
-                      ]
-                    ],
-                  ),
-                ),
 
-              TextField(
-                controller: _questionController,
-                textCapitalization: TextCapitalization.sentences,
-                decoration: InputDecoration(labelText: 'What is the voting question?', filled: true, fillColor: AppTheme.backgroundLight, border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none)),
-              ),
-              const SizedBox(height: 16),
-              ...List.generate(_optionControllers.length, (idx) => Padding(
-                padding: const EdgeInsets.only(bottom: 12.0),
-                child: TextField(
-                  controller: _optionControllers[idx],
-                  decoration: InputDecoration(labelText: 'Option ${idx + 1}', filled: true, fillColor: AppTheme.backgroundLight, border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none)),
+                TextField(
+                  controller: _questionController,
+                  textCapitalization: TextCapitalization.sentences,
+                  decoration: InputDecoration(labelText: 'What is the voting question?', filled: true, fillColor: AppTheme.backgroundLight, border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none)),
                 ),
-              )),
-              TextButton.icon(
-                onPressed: () => setState(() => _optionControllers.add(TextEditingController())),
-                icon: const Icon(Icons.add_circle_outline, color: Colors.orange),
-                label: const Text('Add Alternative Option', style: TextStyle(color: Colors.orange)),
-              ),
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.orange, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 16), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
-                  onPressed: () async {
-                    final cleanOptions = _optionControllers.map((c) => c.text.trim()).where((t) => t.isNotEmpty).toList();
-                    if (_questionController.text.isNotEmpty && cleanOptions.length >= 2) {
-                      await ref.read(pollControllerProvider.notifier).createCustomMealPoll(
-                        messId: widget.messId,
-                        question: _questionController.text.trim(),
-                        options: cleanOptions,
-                      );
-                      _questionController.clear();
-                      if (ctx.mounted) Navigator.pop(ctx);
-                    }
-                  },
-                  child: const Text('Launch Live Poll', style: TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 16),
+                
+                // NEW: Smart Deadline Selector
+                DropdownButtonFormField<int>(
+                  value: _deadlineHours,
+                  decoration: InputDecoration(labelText: 'Voting Deadline', filled: true, fillColor: AppTheme.backgroundLight, border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none)),
+                  items: [1, 2, 4, 12, 24].map((h) => DropdownMenuItem(value: h, child: Text('$h Hours from now'))).toList(),
+                  onChanged: (val) => setState(() => _deadlineHours = val!),
                 ),
-              )
-            ],
+                const SizedBox(height: 16),
+
+                ...List.generate(_optionControllers.length, (idx) => Padding(
+                  padding: const EdgeInsets.only(bottom: 12.0),
+                  child: TextField(
+                    controller: _optionControllers[idx],
+                    decoration: InputDecoration(labelText: 'Option ${idx + 1}', filled: true, fillColor: AppTheme.backgroundLight, border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none)),
+                  ),
+                )),
+                TextButton.icon(
+                  onPressed: () => setState(() => _optionControllers.add(TextEditingController())),
+                  icon: const Icon(Icons.add_circle_outline, color: Colors.orange),
+                  label: const Text('Add Alternative Option', style: TextStyle(color: Colors.orange)),
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(backgroundColor: Colors.orange, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 16), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
+                    onPressed: () async {
+                      final cleanOptions = _optionControllers.map((c) => c.text.trim()).where((t) => t.isNotEmpty).toList();
+                      if (_questionController.text.isNotEmpty && cleanOptions.length >= 2) {
+                        await ref.read(pollControllerProvider.notifier).createCustomMealPoll(
+                          messId: widget.messId,
+                          question: _questionController.text.trim(),
+                          options: cleanOptions,
+                          deadlineHours: _deadlineHours, // NEW: Passes the deadline to controller
+                        );
+                        _questionController.clear();
+                        if (ctx.mounted) Navigator.pop(ctx);
+                      }
+                    },
+                    child: const Text('Launch Live Poll', style: TextStyle(fontWeight: FontWeight.bold)),
+                  ),
+                )
+              ],
+            ),
           ),
         ),
       ),
@@ -176,6 +190,10 @@ class _PollsScreenState extends ConsumerState<PollsScreen> {
               final totalVotes = poll.votes.length;
               final userSelection = poll.votes[currentUid];
 
+              // NEW: Check if poll has naturally expired based on deadline
+              final isExpired = poll.expiresAt != null && DateTime.now().isAfter(poll.expiresAt!);
+              final effectivelyActive = poll.isActive && !isExpired;
+
               return Card(
                 margin: const EdgeInsets.only(bottom: 20),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
@@ -190,15 +208,15 @@ class _PollsScreenState extends ConsumerState<PollsScreen> {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                             decoration: BoxDecoration(
-                              color: poll.isActive ? Colors.green.withOpacity(0.1) : Colors.grey.withOpacity(0.1),
+                              color: effectivelyActive ? Colors.green.withOpacity(0.1) : Colors.grey.withOpacity(0.1),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Text(
-                              poll.isActive ? 'ACTIVE VOTE' : 'CLOSED',
-                              style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: poll.isActive ? Colors.green : Colors.grey),
+                              effectivelyActive ? 'ACTIVE VOTE' : 'CLOSED',
+                              style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: effectivelyActive ? Colors.green : Colors.grey),
                             ),
                           ),
-                          if (isManager && poll.isActive)
+                          if (isManager && effectivelyActive)
                             TextButton(
                               onPressed: () => ref.read(pollControllerProvider.notifier).closePoll(messId: widget.messId, pollId: poll.id),
                               child: const Text('Close Poll', style: TextStyle(color: Colors.redAccent, fontSize: 13)),
@@ -209,6 +227,28 @@ class _PollsScreenState extends ConsumerState<PollsScreen> {
                       Text(poll.question, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.textDark)),
                       const SizedBox(height: 4),
                       Text('Launched by ${poll.addedByName} • $totalVotes votes registered', style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                      
+                      // NEW: Smart Manager Targeting Reminder Button
+                      if (isManager && effectivelyActive) ...[
+                        const SizedBox(height: 16),
+                        SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton.icon(
+                            icon: const Icon(Icons.notifications_active_rounded, size: 16),
+                            label: Text('Ping Unvoted Members (Sent: ${poll.remindersSent})'),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: Colors.orange,
+                              side: BorderSide(color: Colors.orange.withOpacity(0.5)),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                            onPressed: () {
+                              ref.read(pollControllerProvider.notifier).sendSmartReminder(messId: widget.messId, poll: poll);
+                              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Smart reminders sent to unvoted members!'), backgroundColor: Colors.teal));
+                            },
+                          ),
+                        ),
+                      ],
+                      
                       const Divider(height: 32),
                       
                       ...poll.options.map((option) {
@@ -219,7 +259,7 @@ class _PollsScreenState extends ConsumerState<PollsScreen> {
                         return Padding(
                           padding: const EdgeInsets.only(bottom: 12.0),
                           child: InkWell(
-                            onTap: poll.isActive
+                            onTap: effectivelyActive
                                 ? () => ref.read(pollControllerProvider.notifier).castVote(messId: widget.messId, pollId: poll.id, selectedOption: option)
                                 : null,
                             borderRadius: BorderRadius.circular(16),
