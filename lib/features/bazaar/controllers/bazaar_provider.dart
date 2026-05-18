@@ -42,13 +42,13 @@ class BazaarController extends StateNotifier<bool> {
         quantity: quantity,
         unit: unit,
         isBought: false,
-        addedByName: user.name,
+        addedByName: user.displayName ?? 'Unknown', // FIXED: Firebase user name attribute
         estimatedCost: estimatedCost,
         createdAt: DateTime.now(),
       );
 
       await firestore.collection('messes').doc(messId).collection('bazaar_checklist').doc(id).set(item.toMap());
-    } neighborhoods {
+    } catch (e) { // FIXED: Replaced "neighborhoods" typo
       state = false;
     } finally {
       state = false;
@@ -66,7 +66,7 @@ class BazaarController extends StateNotifier<bool> {
         .doc(item.id)
         .update({
       'isBought': !item.isBought,
-      'boughtByName': !item.isBought ? user.name : null,
+      'boughtByName': !item.isBought ? (user.displayName ?? 'Unknown') : null, // FIXED: Firebase user name attribute
     });
   }
 
