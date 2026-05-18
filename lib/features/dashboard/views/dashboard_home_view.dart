@@ -17,7 +17,7 @@ import '../../duties/views/duty_roster_screen.dart';
 import '../../auth/controllers/auth_controller.dart';
 import '../../polls/controllers/poll_provider.dart';
 import '../../duties/controllers/duty_provider.dart';
-import '../../ai_insights/controllers/ai_predictor_provider.dart'; // NEW AI IMPORT
+import '../../ai_insights/controllers/ai_predictor_provider.dart'; 
 
 class DashboardHomeView extends ConsumerWidget {
   final String messId;
@@ -74,7 +74,7 @@ class DashboardHomeView extends ConsumerWidget {
     final pollsAsync = ref.watch(messPollsProvider(messId));
     final dutiesAsync = ref.watch(messDutiesProvider(messId));
     
-    // NEW: Watch the AI Predictor
+    // Watch the AI Predictor
     final fundRunway = ref.watch(fundRunwayProvider(messId));
 
     final isManager = memberData.value?.role == 'manager';
@@ -111,7 +111,7 @@ class DashboardHomeView extends ConsumerWidget {
           ref.invalidate(unreadNotificationCountProvider(messId));
           ref.invalidate(messPollsProvider(messId));
           ref.invalidate(messDutiesProvider(messId));
-          ref.invalidate(fundRunwayProvider(messId)); // Refresh AI insight
+          ref.invalidate(fundRunwayProvider(messId));
         },
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
@@ -140,7 +140,7 @@ class DashboardHomeView extends ConsumerWidget {
               ),
               const SizedBox(height: 16),
               
-              // NEW AI FUND RUNWAY PREDICTOR CARD
+              // AI FUND RUNWAY PREDICTOR CARD
               if (fundRunway != null)
                 Container(
                   margin: const EdgeInsets.only(bottom: 16),
