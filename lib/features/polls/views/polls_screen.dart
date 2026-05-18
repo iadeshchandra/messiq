@@ -4,7 +4,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../auth/controllers/auth_controller.dart';
 import '../../dashboard/controllers/dashboard_providers.dart';
 import '../controllers/poll_provider.dart';
-import '../../ai_insights/controllers/meal_optimizer_provider.dart';
+import '../../ai_insights/controllers/meal_optimizer_provider.dart'; 
 
 class PollsScreen extends ConsumerStatefulWidget {
   final String messId;
@@ -47,7 +47,6 @@ class _PollsScreenState extends ConsumerState<PollsScreen> {
               const Text('Create Meal Poll', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppTheme.textDark)),
               const SizedBox(height: 16),
               
-              // AI OPTIMIZER INTERVENTION
               if (aiInsight != null)
                 Container(
                   margin: const EdgeInsets.only(bottom: 20),
