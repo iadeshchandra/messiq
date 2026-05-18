@@ -12,11 +12,12 @@ final pendingRequestsProvider = StreamProvider.family<List<Map<String, dynamic>>
       .snapshots()
       .asyncMap((snapshot) async {
         List<Map<String, dynamic>> pendingUsers = [];
-        
-        for (const doc in snapshot.docs) {
+
+        // FIXED: Changed 'const doc' to 'final doc' 
+        for (final doc in snapshot.docs) {
           final data = doc.data();
           final uid = data['uid'];
-          
+
           // Fetch the full user details profile to show their name
           final userDoc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
           if (userDoc.exists) {
