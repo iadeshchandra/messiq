@@ -1,7 +1,7 @@
 name: messiq
 description: Smart Living OS for Shared Life
 publish_to: 'none'
-version: 1.0.0+1
+version: 1.0.0+2 # FIXED: Bumped to force GitHub to do a deep clean
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
@@ -10,8 +10,9 @@ dependencies:
   flutter:
     sdk: flutter
 
-  firebase_core: ^2.24.2
-  firebase_auth: ^4.15.3
+  # FIXED: Upgraded to squash the Pigeon UserDetails casting bug
+  firebase_core: ^2.31.0
+  firebase_auth: ^4.19.0
   cloud_firestore: ^4.13.6
   firebase_messaging: ^14.7.10
 
@@ -21,9 +22,9 @@ dependencies:
   pdf: ^3.10.8
   path_provider: ^2.1.2
   share_plus: ^7.2.1
-  
+
   qr_flutter: ^4.1.0
-  
+
   # NEW: Camera and Google ML Kit AI dependencies
   image_picker: ^1.1.2
   google_mlkit_text_recognition: ^0.13.0
