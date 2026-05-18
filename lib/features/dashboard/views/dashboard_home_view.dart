@@ -13,6 +13,7 @@ import '../../notifications/views/notifications_screen.dart';
 import '../../bazaar/views/bazaar_list_screen.dart';
 import '../../polls/views/polls_screen.dart';
 import '../../duties/views/duty_roster_screen.dart';
+import '../../inventory/views/inventory_screen.dart'; // NEW: Imported the Smart Kitchen
 // Core dynamic telemetry & AI imports
 import '../../auth/controllers/auth_controller.dart';
 import '../../polls/controllers/poll_provider.dart';
@@ -73,7 +74,7 @@ class DashboardHomeView extends ConsumerWidget {
     // Live database watchers
     final pollsAsync = ref.watch(messPollsProvider(messId));
     final dutiesAsync = ref.watch(messDutiesProvider(messId));
-    
+
     // Watch the AI Predictor
     final fundRunway = ref.watch(fundRunwayProvider(messId));
 
@@ -139,7 +140,7 @@ class DashboardHomeView extends ConsumerWidget {
                 ),
               ),
               const SizedBox(height: 16),
-              
+
               // AI FUND RUNWAY PREDICTOR CARD
               if (fundRunway != null)
                 Container(
@@ -230,6 +231,24 @@ class DashboardHomeView extends ConsumerWidget {
                     ),
                   ),
                 ],
+              ),
+              const SizedBox(height: 12),
+
+              // NEW Row 3: Smart Kitchen Inventory (Full Width for emphasis)
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => InventoryScreen(messId: messId))),
+                  icon: const Icon(Icons.kitchen_rounded),
+                  label: const Text('Smart Kitchen Inventory'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white, 
+                    foregroundColor: Colors.blueGrey, 
+                    side: const BorderSide(color: Colors.blueGrey), 
+                    padding: const EdgeInsets.symmetric(vertical: 16), 
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))
+                  ),
+                ),
               ),
               const SizedBox(height: 28),
 
