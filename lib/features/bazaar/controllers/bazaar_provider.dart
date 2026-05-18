@@ -3,61 +3,81 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../auth/controllers/auth_controller.dart';
 import '../models/bazaar_item_model.dart';
 
-// Stream all bazaar items for this mess, ordered by newest first
-final messBazaarProvider = StreamProvider.family<List<BazaarItemModel>, String>((ref, messId) {
+final bazaarItemsStreamProvider = StreamProvider.family<List<BazaarItemModel>, String>((ref, messId) {
   return FirebaseFirestore.instance
       .collection('messes')
       .doc(messId)
-      .collection('bazaarItems')
+      .collection('bazaar_checklist')
       .orderBy('createdAt', descending: true)
       .snapshots()
-      .map((snapshot) => snapshot.docs.map((doc) => BazaarItemModel.fromMap(doc.data(), doc.id)).toList());
+      .map((snapshot) => snapshot.docs.map((doc) => BazaarItemModel.fromMap(doc.data())).toList());
 });
 
-final bazaarControllerProvider = Provider((ref) => BazaarController(ref: ref));
+final bazaarControllerProvider = StateNotifierProvider<BazaarController, bool>((ref) {
+  return BazaarController(ref: ref);
+});
 
-class BazaarController {
-  final Ref ref;
-  BazaarController({required this.ref});
+class BazaarController extends StateNotifier<bool> {
+  final Ref _ref;
+  BazaarController({required Ref ref}) : _ref = ref, super(false);
 
-  Future<void> addItem(String messId, String itemName) async {
-    if (itemName.trim().isEmpty) return;
-    
-    final user = ref.read(authStateProvider).value;
+  Future<void> addItem({
+    required String messId,
+    required String name,
+    required double quantity,
+    required String unit,
+    required double estimatedCost,
+  }) async {
+    state = true;
+    try {
+      final user = _ref.read(authStateProvider).value;
+      if (user == null) return;
+
+      final firestore = FirebaseFirestore.instance;
+      final id = firestore.collection('messes').doc(messId).collection('bazaar_checklist').doc().id;
+
+      final item = BazaarItemModel(
+        id: id,
+        name: name,
+        quantity: quantity,
+        unit: unit,
+        isBought: false,
+        addedByName: user.name,
+        estimatedCost: estimatedCost,
+        createdAt: DateTime.now(),
+      );
+
+      await firestore.collection('messes').doc(messId).collection('bazaar_checklist').doc(id).set(item.toMap());
+    } neighborhoods {
+      state = false;
+    } finally {
+      state = false;
+    }
+  }
+
+  Future<void> toggleItemStatus(String messId, BazaarItemModel item) async {
+    final user = _ref.read(authStateProvider).value;
     if (user == null) return;
 
-    // Fetch the user's name from Firestore to tag who added the item
-    final userDoc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
-    final userName = userDoc.data()?['name'] ?? 'Member';
-
-    final docRef = FirebaseFirestore.instance.collection('messes').doc(messId).collection('bazaarItems').doc();
-    
-    final newItem = BazaarItemModel(
-      id: docRef.id,
-      name: itemName.trim(),
-      addedByUid: user.uid,
-      addedByName: userName,
-      createdAt: DateTime.now(),
-    );
-
-    await docRef.set(newItem.toMap());
-  }
-
-  Future<void> toggleItemStatus(String messId, String itemId, bool currentStatus) async {
     await FirebaseFirestore.instance
         .collection('messes')
         .doc(messId)
-        .collection('bazaarItems')
-        .doc(itemId)
-        .update({'isPurchased': !currentStatus});
+        .collection('bazaar_checklist')
+        .doc(item.id)
+        .update({
+      'isBought': !item.isBought,
+      'boughtByName': !item.isBought ? user.name : null,
+    });
   }
 
-  Future<void> deleteItem(String messId, String itemId) async {
-    await FirebaseFirestore.instance
-        .collection('messes')
-        .doc(messId)
-        .collection('bazaarItems')
-        .doc(itemId)
-        .delete();
+  Future<void> clearCompletedItems(String messId, List<BazaarItemModel> items) async {
+    final batch = FirebaseFirestore.instance.batch();
+    final completed = items.where((item) => item.isBought).toList();
+
+    for (var item in completed) {
+      final ref = FirebaseFirestore.instance.collection('messes').doc(messId).collection('bazaar_checklist').doc(item.id);
+      batch.delete(ref);
+    }
+    await batch.commit();
   }
 }
