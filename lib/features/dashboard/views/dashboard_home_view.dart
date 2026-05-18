@@ -7,6 +7,7 @@ import '../../finance/views/add_expense_screen.dart';
 import '../../finance/views/add_meal_screen.dart';
 import '../../finance/views/add_payment_screen.dart';
 import '../../finance/views/hisab_sheet_screen.dart';
+import '../../finance/views/add_utility_bill_screen.dart';
 import '../../notifications/controllers/notification_provider.dart';
 import '../../notifications/views/notifications_screen.dart';
 import '../../bazaar/views/bazaar_list_screen.dart';
@@ -67,7 +68,7 @@ class DashboardHomeView extends ConsumerWidget {
     final memberData = ref.watch(currentMemberRoleProvider(messId));
     final hisabSummary = ref.watch(hisabSummaryProvider(messId));
     final unreadCount = ref.watch(unreadNotificationCountProvider(messId));
-    
+
     // Live database watchers
     final pollsAsync = ref.watch(messPollsProvider(messId));
     final dutiesAsync = ref.watch(messDutiesProvider(messId));
@@ -133,7 +134,7 @@ class DashboardHomeView extends ConsumerWidget {
                 ),
               ),
               const SizedBox(height: 16),
-              
+
               // Top Stats Grid Row
               Row(
                 children: [
@@ -240,7 +241,7 @@ class DashboardHomeView extends ConsumerWidget {
                 data: (duties) {
                   final todayStr = DateTime.now().toString().split(' ')[0];
                   final todaysTasks = duties.where((d) => !d.isCompleted && d.assignedDate.toString().split(' ')[0] == todayStr).toList();
-                  
+
                   if (todaysTasks.isEmpty) {
                     return const Card(
                       elevation: 0,
@@ -289,7 +290,7 @@ class DashboardHomeView extends ConsumerWidget {
                     ),
                     SizedBox(height: 8),
                     Text(
-                      '“समानो मन्त्रः समितिः समानी समानं मनः सह चित्तमेषाम्”',
+                      '“সমানো মन्त्रः समितिः সমানী সমানং মনঃ সহ চিত্তমেষাম্”',
                       textAlign: TextAlign.center,
                       style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppTheme.textDark, fontStyle: FontStyle.italic),
                     ),
@@ -330,14 +331,26 @@ class DashboardHomeView extends ConsumerWidget {
                   ],
                 ),
                 const SizedBox(height: 12),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => AddPaymentScreen(messId: messId))),
-                    icon: const Icon(Icons.payments_rounded),
-                    label: const Text('Log Member Deposit'),
-                    style: ElevatedButton.styleFrom(backgroundColor: Colors.orange, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 16), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
-                  ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => AddPaymentScreen(messId: messId))),
+                        icon: const Icon(Icons.payments_rounded, size: 18),
+                        label: const Text('Deposit'),
+                        style: ElevatedButton.styleFrom(backgroundColor: Colors.orange, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 16), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => AddUtilityBillScreen(messId: messId))),
+                        icon: const Icon(Icons.receipt_long_rounded, size: 18),
+                        label: const Text('Split Bill'),
+                        style: ElevatedButton.styleFrom(backgroundColor: Colors.blueAccent, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 16), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ],
