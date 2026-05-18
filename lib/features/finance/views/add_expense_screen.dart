@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_theme.dart';
 import '../controllers/finance_provider.dart';
-import '../../ai_insights/controllers/ocr_scanner_provider.dart'; // NEW: The AI Scanner Import
+import '../../ai_insights/controllers/ocr_scanner_provider.dart'; 
 
 class AddExpenseScreen extends ConsumerStatefulWidget {
   final String messId;
@@ -15,12 +15,11 @@ class AddExpenseScreen extends ConsumerStatefulWidget {
 class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
   final _amountCtrl = TextEditingController();
   final _descCtrl = TextEditingController();
-  final _noteCtrl = TextEditingController(); // The Note Controller
+  final _noteCtrl = TextEditingController(); 
   String _type = 'Bazaar';
   DateTime _date = DateTime.now();
   bool _isLoading = false;
   
-  // NEW: State for AI Scanner
   bool _isScanning = false; 
 
   @override
@@ -31,7 +30,6 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
     super.dispose();
   }
 
-  // NEW: Trigger the AI Scanner
   Future<void> _startAiScan() async {
     setState(() => _isScanning = true);
     
@@ -64,7 +62,6 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // NEW: AI RECEIPT SCANNER BUTTON
             SizedBox(
               width: double.infinity,
               child: OutlinedButton.icon(
@@ -143,7 +140,6 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
             ),
             const SizedBox(height: 20),
 
-            // ACCOUNTABILITY NOTE UI
             const Text('Manager Note (Optional)', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
             const SizedBox(height: 8),
             TextField(
@@ -167,7 +163,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                         _descCtrl.text.trim(), 
                         _type, 
                         _date,
-                        note: _noteCtrl.text.trim().isEmpty ? null : _noteCtrl.text.trim(), // Send the note!
+                        note: _noteCtrl.text.trim().isEmpty ? null : _noteCtrl.text.trim(), 
                       );
                       if (mounted) {
                         Navigator.pop(context);
